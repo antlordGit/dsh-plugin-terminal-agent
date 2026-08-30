@@ -1,0 +1,10 @@
+# dsh-better-sidebar is an npm dependency and provides the terminal runtime.
+# It must be mounted once in the profile; do not insert a second copy here,
+# because its own aggregate duplicate guard intentionally owns that decision.
+- id: better-sidebar
+  config:
+    terminalsPerSession: 20
+
+- insert:
+    - id: terminal-tab
+      name: 'dsh-plugin-terminal-tab'

@@ -1,0 +1,46 @@
+{
+  "name": "dsh-plugin-terminal-tab",
+  "description": "在 DSH 会话的对话与轨迹旁新增终端页签，复用 dsh-better-sidebar 的原生终端面板。",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build-client.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "dsh-better-sidebar": "^0.14.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-modules"
+      ],
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "deepseek-harness",
+    "terminal"
+  ]
+}
