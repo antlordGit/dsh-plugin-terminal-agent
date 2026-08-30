@@ -26,11 +26,6 @@
 
 ![将当前进度交接给新智能体](docs/images/terminal-agent-handoff.png)
 
-### 从会话列表一键交接
-
-如果同时装了 `dsh-plugin-question-index`，会话侧栏的「···」菜单里会出现一项「交接」。
-点击后弹出与本插件相同的智能体选择框，确认后会在该会话的「终端智能体」页签里直接开一个新的二级终端，并自动切换过去——不需要先手动打开页面。
-
 ## 功能
 
 - 在「对话」和「轨迹」旁新增「终端智能体」页签
@@ -38,22 +33,11 @@
 - 点击 `+` 菜单第一项「新终端」可创建空 shell；或在 Claude / Codex 等智能体项中创建带对应命令的终端，新终端会自动执行对应的 `claude` / `codex` 命令
 - 设置页提供「智能体」菜单，可启用/禁用内置项，并分别配置名称、命令和启动参数
 - 右上角「交接」可把当前会话交给已启用的另一智能体；完整 transcript 以只读文件保存，并附带原会话、工作目录和最近进展提示
-- 与 `dsh-plugin-question-index` 联动：会话列表的「交接」菜单会复用本插件的智能体配置，并在本页面直接开新终端
 - 双击二级终端标题可编辑；失焦或按 Enter 后保存，并在对应终端执行 `/rename 新标题`
 - 每个会话拥有独立且可重连的终端进程
 - 自动使用当前会话工作目录
 - 明暗主题自动适配
 - 首次打开终端时才加载 xterm 资源
-
-## 事件契约
-
-`question-index` 触发的会话列表交接通过以下事件与本插件通信：
-
-| 名称 | 说明 |
-| --- | --- |
-| `dsh-terminal-agent:handoff` (`window` CustomEvent) | `detail.sessionId`、`detail.command` 必填；`detail.agentId` / `detail.agentName` / `detail.title` 可选。本插件收到后在该会话里追加一条带命令的二级终端并切到该标签。 |
-| `localStorage["dsh-terminal-agent:agents"]` | JSON 数组，由本插件的设置页写入，被 question-index 的交接对话框读取以列出可选智能体。 |
-| `POST /api/plugins/terminal-agent/handoff` | question-index 把会话轨迹写到磁盘后回调该路由；本插件的 Host 端实现文件写入并返回 `promptPath`。 |
 
 ## 安装方式
 
