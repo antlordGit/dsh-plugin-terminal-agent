@@ -87,6 +87,7 @@ const CSS = [
 
 const TERMINAL_LIMIT = 20
 const sessionWorkspaces = new Map()
+const workspaceListeners = new Map()
 const openTerminalKeys = new Set()
 const startupSentKeys = new Set()
 const terminalSenders = new Map()
@@ -226,8 +227,16 @@ const terminalStore = {
 
 function terminalRecord(agent, id) {
   return agent === null
-    ? { id: id, title: '终端', command: null, agentId: null }
-    : { id: id, title: agent.name, command: agent.command + (agent.args.trim() === '' ? '' : ' ' + agent.args.trim()), agentId: agent.id }
+    ? { id: id, title: '终端', command: null, agentId: null, agentName: null }
+    : { id: id, title: agent.name, command: agent.command + (agent.args.trim() === '' ? '' : ' ' + agent.args.trim()), agentId: agent.id, agentName: agent.name }
+}
+
+function terminalTitleTooltip(item, agents) {
+  if (item.agentId === null) return item.title
+  const agent = agents.find(function (candidate) { return candidate.id === item.agentId })
+  const agentName = typeof item.agentName === 'string' && item.agentName !== '' ? item.agentName : (agent && agent.name)
+  if (!agentName) return item.title
+  return '标题：' + item.title + '\n智能体：' + agentName
 }
 
 function workspaceStorageKey(sessionId) { return 'dsh-terminal-tab:' + sessionId }
@@ -549,6 +558,13 @@ function workspaceFor(sessionId) {
   return workspace
 }
 
+function publishWorkspace(sessionId, workspace) {
+  sessionWorkspaces.set(sessionId, workspace)
+  persistWorkspace(sessionId, workspace)
+  const listener = workspaceListeners.get(sessionId)
+  if (typeof listener === 'function') listener(workspace)
+}
+
 /** A second attachment sends startup/control input and stays attached. */
 function TerminalBridge(props) {
   React.useEffect(function () {
@@ -783,6 +799,13 @@ function TerminalConversationView(props, ctx) {
     return function () { active = false }
   }, [])
 
+  React.useEffect(function () {
+    workspaceListeners.set(props.sessionId, setWorkspace)
+    return function () {
+      if (workspaceListeners.get(props.sessionId) === setWorkspace) workspaceListeners.delete(props.sessionId)
+    }
+  }, [props.sessionId])
+
   // The conversation composer is useful for chat/trajectory, but competes
   // with the terminal for vertical space. Hide the exact session seat while
   // this view is mounted, then restore every original DOM value on unmount.
@@ -870,9 +893,7 @@ function TerminalConversationView(props, ctx) {
     return React.createElement('div', { className: 'dtt-status' }, '正在加载终端…')
   }
   const updateWorkspace = function (next) {
-    sessionWorkspaces.set(props.sessionId, next)
-    persistWorkspace(props.sessionId, next)
-    setWorkspace(next)
+    publishWorkspace(props.sessionId, next)
   }
   const addTerminal = function (agent) {
     if (workspace.terminals.length >= TERMINAL_LIMIT) return
@@ -1000,7 +1021,7 @@ function TerminalConversationView(props, ctx) {
     const launchLine = commandLine === ''
       ? 'cat ' + shellQuote(files.promptPath)
       : commandLine + ' "$(cat ' + shellQuote(files.promptPath) + ')"'
-    const record = { id: 'terminal-tab-' + workspace.nextId, title: selectedForwardAgent.name, command: launchLine, agentId: selectedForwardAgent.id }
+    const record = { id: 'terminal-tab-' + workspace.nextId, title: selectedForwardAgent.name, command: launchLine, agentId: selectedForwardAgent.id, agentName: selectedForwardAgent.name }
     const key = props.sessionId + ':' + record.id
     openTerminalKeys.add(key)
     updateWorkspace({ terminals: workspace.terminals.concat(record), activeId: record.id, nextId: workspace.nextId + 1 })
@@ -1051,7 +1072,11 @@ function TerminalConversationView(props, ctx) {
                 if (event.key === 'Escape') { event.preventDefault(); setEditing(null) }
               },
             })
-            : React.createElement('span', { className: 'dtt-tabTitle', onDoubleClick: function (event) { beginRename(item, event) }, title: '双击修改标题' }, item.title),
+            : React.createElement('span', {
+              className: 'dtt-tabTitle',
+              onDoubleClick: function (event) { beginRename(item, event) },
+              title: terminalTitleTooltip(item, agents),
+            }, item.title),
           workspace.terminals.length > 1 ? React.createElement('span', {
             className: 'dtt-tabClose',
             role: 'button',
@@ -1170,8 +1195,8 @@ function TerminalConversationView(props, ctx) {
     React.createElement('button', {
       type: 'button',
       className: 'dtt-forward',
-      title: '交接给智能体',
-      'aria-label': '交接给智能体',
+      title: '交接',
+      'aria-label': '交接',
       'aria-haspopup': 'dialog',
       onClick: function () { setForwardOpen(true) },
     },
@@ -1182,9 +1207,9 @@ function TerminalConversationView(props, ctx) {
       ),
     ),
     forwardOpen ? React.createElement('div', { className: 'dtt-modalMask' },
-      React.createElement('div', { className: 'dtt-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': '交接给智能体' },
+      React.createElement('div', { className: 'dtt-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': '交接' },
         React.createElement('div', { className: 'dtt-modalHead' },
-          React.createElement('h3', { className: 'dtt-modalTitle' }, '交接给智能体'),
+          React.createElement('h3', { className: 'dtt-modalTitle' }, '交接'),
           React.createElement('button', {
             type: 'button', className: 'dtt-modalClose', 'aria-label': '关闭',
             onClick: function () { setForwardOpen(false) },
@@ -1225,6 +1250,31 @@ function TerminalConversationView(props, ctx) {
 export const inject = ['slots', 'modules', 'sessions']
 
 export function apply(ctx) {
+  if (typeof window !== 'undefined') {
+    ctx.effect(function () {
+      const receiveHandoff = function (event) {
+        const detail = event && event.detail
+        if (!detail || typeof detail.sessionId !== 'string' || typeof detail.command !== 'string') return
+        const workspace = workspaceFor(detail.sessionId)
+        if (workspace.terminals.length >= TERMINAL_LIMIT) return
+        const record = {
+          id: 'terminal-tab-' + workspace.nextId,
+          title: typeof detail.title === 'string' && detail.title !== '' ? detail.title : '智能体',
+          command: detail.command,
+          agentId: typeof detail.agentId === 'string' ? detail.agentId : null,
+          agentName: typeof detail.agentName === 'string' && detail.agentName !== '' ? detail.agentName : (typeof detail.title === 'string' ? detail.title : null),
+        }
+        openTerminalKeys.add(detail.sessionId + ':' + record.id)
+        publishWorkspace(detail.sessionId, {
+          terminals: workspace.terminals.concat(record),
+          activeId: record.id,
+          nextId: workspace.nextId + 1,
+        })
+      }
+      window.addEventListener('dsh-terminal-tab:handoff', receiveHandoff)
+      return function () { window.removeEventListener('dsh-terminal-tab:handoff', receiveHandoff) }
+    })
+  }
   ctx.effect(function () { return insertStyles(CSS) }, 'terminal-tab: styles')
   ctx.slots.inject('settings.section', function () {
     return ctx.slots.register({
