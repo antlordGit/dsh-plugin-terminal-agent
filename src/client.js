@@ -1,88 +1,88 @@
 /**
  * Adds a session-scoped `conversation.view` entry and renders the exact
  * TerminalView shipped by dsh-better-sidebar. The heavy xterm bundle remains
- * lazy: it is fetched only after the user opens the terminal tab.
+ * lazy: it is fetched only after the user opens the terminal-agent view.
  */
 import React from 'react'
 
 const CSS = [
-  '.dtt-workspace{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base)}',
-  '.dtt-tabs{box-sizing:border-box;height:38px;flex:none;display:flex;align-items:stretch;padding-right:52px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}',
-  '.dtt-tabList{min-width:0;flex:1 1 auto;display:flex;align-items:stretch;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}',
-  '.dtt-tabList::-webkit-scrollbar{display:none}',
-  '.dtt-tab{position:relative;min-width:112px;max-width:190px;display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;border:0;border-right:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px}',
-  '.dtt-tab:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
-  '.dtt-tab[data-active="true"]{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
-  '.dtt-tab[data-active="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--dsw-alias-brand-primary)}',
-  '.dtt-tabTitle{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}',
-  '.dtt-tabInput{min-width:54px;width:100%;height:24px;padding:0 5px;border:1px solid var(--dsw-alias-brand-primary);border-radius:5px;outline:none;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit}',
-  '.dtt-tabClose{width:18px;height:18px;display:grid;place-items:center;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font-size:15px;line-height:1}',
-  '.dtt-tabClose:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
-  '.dtt-addWrap{position:relative;z-index:2;flex:0 0 38px;background:var(--dsw-alias-bg-layer-1)}',
-  '.dtt-add{width:38px;height:38px;border:0;border-right:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:21px;font-weight:300}',
-  '.dtt-add:hover,.dtt-add[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
-  '.dtt-add:disabled{opacity:.38;cursor:not-allowed}',
-  '.dtt-menu{position:absolute;z-index:30;top:34px;right:4px;width:156px;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 14%,transparent)}',
-  '.dtt-menuItem{width:100%;display:flex;align-items:center;gap:9px;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;font-size:13px}',
-  '.dtt-menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)}',
-  '.dtt-contextMenu{position:fixed;z-index:140;width:148px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 18%,transparent)}',
-  '.dtt-contextItem{box-sizing:border-box;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;font-size:12.5px}',
-  '.dtt-contextItem:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}',
-  '.dtt-contextItem:disabled{opacity:.38;cursor:default}',
-  '.dtt-contextDivider{height:1px;margin:4px 6px;background:var(--dsw-alias-border-l1)}',
-  '.dtt-menuIcon{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--dsw-alias-border-l2);border-radius:5px;color:var(--dsw-alias-label-secondary);font:600 10px/1 var(--ds-font-family-code)}',
-  '.dtt-panels{position:relative;min-height:0;flex:1}',
-  '.dtt-panel{position:absolute;inset:0;min-width:0;min-height:0}',
-  '.dtt-panel[hidden]{display:none}',
-  '.dtt-panel>div{width:100%;height:100%;min-height:0}',
+  '.dta-workspace{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base)}',
+  '.dta-tabs{box-sizing:border-box;height:38px;flex:none;display:flex;align-items:stretch;padding-right:52px;border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1)}',
+  '.dta-tabList{min-width:0;flex:1 1 auto;display:flex;align-items:stretch;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}',
+  '.dta-tabList::-webkit-scrollbar{display:none}',
+  '.dta-tab{position:relative;min-width:112px;max-width:190px;display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;border:0;border-right:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px}',
+  '.dta-tab:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
+  '.dta-tab[data-active="true"]{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}',
+  '.dta-tab[data-active="true"]::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--dsw-alias-brand-primary)}',
+  '.dta-tabTitle{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}',
+  '.dta-tabInput{min-width:54px;width:100%;height:24px;padding:0 5px;border:1px solid var(--dsw-alias-brand-primary);border-radius:5px;outline:none;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font:inherit}',
+  '.dta-tabClose{width:18px;height:18px;display:grid;place-items:center;border:0;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font-size:15px;line-height:1}',
+  '.dta-tabClose:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
+  '.dta-addWrap{position:relative;z-index:2;flex:0 0 38px;background:var(--dsw-alias-bg-layer-1)}',
+  '.dta-add{width:38px;height:38px;border:0;border-right:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:21px;font-weight:300}',
+  '.dta-add:hover,.dta-add[aria-expanded="true"]{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
+  '.dta-add:disabled{opacity:.38;cursor:not-allowed}',
+  '.dta-menu{position:absolute;z-index:30;top:34px;right:4px;width:156px;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 14%,transparent)}',
+  '.dta-menuItem{width:100%;display:flex;align-items:center;gap:9px;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;font-size:13px}',
+  '.dta-menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)}',
+  '.dta-contextMenu{position:fixed;z-index:140;width:148px;padding:5px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px color-mix(in srgb,var(--dsw-alias-label-primary) 18%,transparent)}',
+  '.dta-contextItem{box-sizing:border-box;width:100%;height:32px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;font-size:12.5px}',
+  '.dta-contextItem:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}',
+  '.dta-contextItem:disabled{opacity:.38;cursor:default}',
+  '.dta-contextDivider{height:1px;margin:4px 6px;background:var(--dsw-alias-border-l1)}',
+  '.dta-menuIcon{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--dsw-alias-border-l2);border-radius:5px;color:var(--dsw-alias-label-secondary);font:600 10px/1 var(--ds-font-family-code)}',
+  '.dta-panels{position:relative;min-height:0;flex:1}',
+  '.dta-panel{position:absolute;inset:0;min-width:0;min-height:0}',
+  '.dta-panel[hidden]{display:none}',
+  '.dta-panel>div{width:100%;height:100%;min-height:0}',
   // Full-screen TUIs use ANSI inverse/default-black rows for prompts. In a
   // light shell those otherwise become visually dominant black bars. Cover
   // both xterm's palette classes and its DOM renderer's inline RGB form.
-  'body:not([data-ds-dark-theme]) .dtt-panel .xterm-rows .xterm-bg-0,body:not([data-ds-dark-theme]) .dtt-panel .xterm-rows .xterm-bg-257,body:not([data-ds-dark-theme]) .dtt-panel .xterm-rows span[style*="background-color: rgb(56, 58, 66)"],body:not([data-ds-dark-theme]) .dtt-panel .xterm-rows span[style*="background-color:#383a42"],body:not([data-ds-dark-theme]) .dtt-panel .xterm-rows span[style*="background-color: #383a42"]{background-color:var(--dsw-alias-bg-layer-2)!important;color:var(--dsw-alias-label-primary)!important}',
-  '.dtt-status{box-sizing:border-box;height:100%;display:grid;place-items:center;padding:24px;color:var(--dsw-alias-label-secondary);font-size:13px}',
-  '.dtt-error{color:var(--dsw-alias-state-error-primary);white-space:pre-wrap;text-align:center}',
-  '.dtt-settings{box-sizing:border-box;max-width:760px;padding:28px 32px;color:var(--dsw-alias-label-primary)}',
-  '.dtt-settingsTitle{margin:0 0 6px;font-size:20px;font-weight:650}',
-  '.dtt-settingsDesc{margin:0 0 24px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}',
-  '.dtt-agentList{border-top:1px solid var(--dsw-alias-border-l1)}',
-  '.dtt-agentCard{border-bottom:1px solid var(--dsw-alias-border-l1)}',
-  '.dtt-agentRow{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(200px,1.5fr) auto auto auto;align-items:center;gap:12px;min-height:62px}',
-  '.dtt-agentName{font-size:14px;font-weight:520}.dtt-agentSummary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font:12px/1.5 var(--ds-font-family-code)}',
-  '.dtt-agentDetails{display:grid;grid-template-columns:1fr 1.35fr;gap:12px;padding:0 0 16px 142px}',
-  '.dtt-agentField{min-width:0}.dtt-agentFieldLabel{display:block;margin-bottom:4px;color:var(--dsw-alias-label-tertiary);font-size:10px}',
-  '.dtt-agentToggle,.dtt-agentDelete,.dtt-agentAdd{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px}',
-  '.dtt-agentToggle{padding:5px 10px}.dtt-agentToggle[data-enabled="true"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base)}',
-  '.dtt-agentDelete{padding:5px 8px}.dtt-agentDelete:hover{color:var(--dsw-alias-state-error-primary)}',
-  '.dtt-agentExpand{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:16px;transition:transform .15s ease}.dtt-agentExpand[data-expanded="true"]{transform:rotate(180deg)}.dtt-agentExpand:hover{background:var(--dsw-alias-interactive-bg-hover)}',
-  '.dtt-agentForm{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;margin-top:20px}',
-  '.dtt-agentInput{width:100%;height:36px;box-sizing:border-box;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;outline:none;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}',
-  '.dtt-agentInput:focus{border-color:var(--dsw-alias-brand-primary)}',
-  '.dtt-agentAdd{padding:0 16px;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:transparent}',
-  '.dtt-workspace{position:relative}',
-  '.dtt-forward{position:absolute;top:4px;right:14px;z-index:24;box-sizing:border-box;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;box-shadow:none;transition:color .15s ease,background .15s ease}',
-  '.dtt-forward svg{display:block;flex:none;transform:translate(-.25px,.25px)}',
-  '.dtt-forward:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}',
-  '.dtt-modalMask{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:color-mix(in srgb,var(--dsw-alias-label-primary) 38%,transparent)}',
-  '.dtt-modal{box-sizing:border-box;width:min(520px,calc(100vw - 48px));max-height:calc(100vh - 64px);overflow:auto;padding:24px 26px;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-overlay);box-shadow:0 24px 64px color-mix(in srgb,var(--dsw-alias-label-primary) 24%,transparent)}',
-  '.dtt-modalHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}',
-  '.dtt-modalTitle{flex:1;margin:0;font-size:17px;font-weight:650;color:var(--dsw-alias-label-primary)}',
-  '.dtt-modalClose{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font-size:16px;line-height:1}',
-  '.dtt-modalClose:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
-  '.dtt-modalDesc{margin:0 0 18px;color:var(--dsw-alias-label-secondary);font-size:12.5px;line-height:1.6}',
-  '.dtt-modalBox{margin-bottom:18px;padding:12px 14px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}',
-  '.dtt-modalBoxTitle{margin:0 0 3px;font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary)}',
-  '.dtt-modalBoxText{margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;word-break:break-all}',
-  '.dtt-modalLabel{display:block;margin:0 0 6px;color:var(--dsw-alias-label-primary);font-size:13px;font-weight:600}',
-  '.dtt-modalSelect{width:100%;height:38px;box-sizing:border-box;padding:0 10px;margin-bottom:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;outline:none;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px}',
-  '.dtt-modalSelect:focus{border-color:var(--dsw-alias-brand-primary)}',
-  '.dtt-modalHint{margin:-6px 0 14px;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:1.55}',
-  '.dtt-modalWarn{margin:-6px 0 14px;color:var(--dsw-alias-state-warn-primary);font-size:12px}',
-  '.dtt-modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}',
-  '.dtt-modalCancel,.dtt-modalConfirm{height:34px;padding:0 16px;border-radius:9px;border:1px solid var(--dsw-alias-border-l2);cursor:pointer;font-size:13px}',
-  '.dtt-modalCancel{background:transparent;color:var(--dsw-alias-label-secondary)}',
-  '.dtt-modalCancel:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}',
-  '.dtt-modalConfirm{border-color:transparent;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base)}',
-  '.dtt-modalConfirm:disabled{opacity:.45;cursor:not-allowed}',
+  'body:not([data-ds-dark-theme]) .dta-panel .xterm-rows .xterm-bg-0,body:not([data-ds-dark-theme]) .dta-panel .xterm-rows .xterm-bg-257,body:not([data-ds-dark-theme]) .dta-panel .xterm-rows span[style*="background-color: rgb(56, 58, 66)"],body:not([data-ds-dark-theme]) .dta-panel .xterm-rows span[style*="background-color:#383a42"],body:not([data-ds-dark-theme]) .dta-panel .xterm-rows span[style*="background-color: #383a42"]{background-color:var(--dsw-alias-bg-layer-2)!important;color:var(--dsw-alias-label-primary)!important}',
+  '.dta-status{box-sizing:border-box;height:100%;display:grid;place-items:center;padding:24px;color:var(--dsw-alias-label-secondary);font-size:13px}',
+  '.dta-error{color:var(--dsw-alias-state-error-primary);white-space:pre-wrap;text-align:center}',
+  '.dta-settings{box-sizing:border-box;max-width:760px;padding:28px 32px;color:var(--dsw-alias-label-primary)}',
+  '.dta-settingsTitle{margin:0 0 6px;font-size:20px;font-weight:650}',
+  '.dta-settingsDesc{margin:0 0 24px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}',
+  '.dta-agentList{border-top:1px solid var(--dsw-alias-border-l1)}',
+  '.dta-agentCard{border-bottom:1px solid var(--dsw-alias-border-l1)}',
+  '.dta-agentRow{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(200px,1.5fr) auto auto auto;align-items:center;gap:12px;min-height:62px}',
+  '.dta-agentName{font-size:14px;font-weight:520}.dta-agentSummary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font:12px/1.5 var(--ds-font-family-code)}',
+  '.dta-agentDetails{display:grid;grid-template-columns:1fr 1.35fr;gap:12px;padding:0 0 16px 142px}',
+  '.dta-agentField{min-width:0}.dta-agentFieldLabel{display:block;margin-bottom:4px;color:var(--dsw-alias-label-tertiary);font-size:10px}',
+  '.dta-agentToggle,.dta-agentDelete,.dta-agentAdd{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px}',
+  '.dta-agentToggle{padding:5px 10px}.dta-agentToggle[data-enabled="true"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base)}',
+  '.dta-agentDelete{padding:5px 8px}.dta-agentDelete:hover{color:var(--dsw-alias-state-error-primary)}',
+  '.dta-agentExpand{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:16px;transition:transform .15s ease}.dta-agentExpand[data-expanded="true"]{transform:rotate(180deg)}.dta-agentExpand:hover{background:var(--dsw-alias-interactive-bg-hover)}',
+  '.dta-agentForm{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;margin-top:20px}',
+  '.dta-agentInput{width:100%;height:36px;box-sizing:border-box;padding:0 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;outline:none;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-size:13px}',
+  '.dta-agentInput:focus{border-color:var(--dsw-alias-brand-primary)}',
+  '.dta-agentAdd{padding:0 16px;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:transparent}',
+  '.dta-workspace{position:relative}',
+  '.dta-forward{position:absolute;top:4px;right:14px;z-index:24;box-sizing:border-box;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;box-shadow:none;transition:color .15s ease,background .15s ease}',
+  '.dta-forward svg{display:block;flex:none;transform:translate(-.25px,.25px)}',
+  '.dta-forward:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}',
+  '.dta-modalMask{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:color-mix(in srgb,var(--dsw-alias-label-primary) 38%,transparent)}',
+  '.dta-modal{box-sizing:border-box;width:min(520px,calc(100vw - 48px));max-height:calc(100vh - 64px);overflow:auto;padding:24px 26px;border:1px solid var(--dsw-alias-border-l2);border-radius:14px;background:var(--dsw-alias-bg-overlay);box-shadow:0 24px 64px color-mix(in srgb,var(--dsw-alias-label-primary) 24%,transparent)}',
+  '.dta-modalHead{display:flex;align-items:center;gap:10px;margin-bottom:6px}',
+  '.dta-modalTitle{flex:1;margin:0;font-size:17px;font-weight:650;color:var(--dsw-alias-label-primary)}',
+  '.dta-modalClose{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;font-size:16px;line-height:1}',
+  '.dta-modalClose:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}',
+  '.dta-modalDesc{margin:0 0 18px;color:var(--dsw-alias-label-secondary);font-size:12.5px;line-height:1.6}',
+  '.dta-modalBox{margin-bottom:18px;padding:12px 14px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-layer-1)}',
+  '.dta-modalBoxTitle{margin:0 0 3px;font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary)}',
+  '.dta-modalBoxText{margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;word-break:break-all}',
+  '.dta-modalLabel{display:block;margin:0 0 6px;color:var(--dsw-alias-label-primary);font-size:13px;font-weight:600}',
+  '.dta-modalSelect{width:100%;height:38px;box-sizing:border-box;padding:0 10px;margin-bottom:14px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;outline:none;background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px}',
+  '.dta-modalSelect:focus{border-color:var(--dsw-alias-brand-primary)}',
+  '.dta-modalHint{margin:-6px 0 14px;color:var(--dsw-alias-label-tertiary);font-size:11.5px;line-height:1.55}',
+  '.dta-modalWarn{margin:-6px 0 14px;color:var(--dsw-alias-state-warn-primary);font-size:12px}',
+  '.dta-modalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}',
+  '.dta-modalCancel,.dta-modalConfirm{height:34px;padding:0 16px;border-radius:9px;border:1px solid var(--dsw-alias-border-l2);cursor:pointer;font-size:13px}',
+  '.dta-modalCancel{background:transparent;color:var(--dsw-alias-label-secondary)}',
+  '.dta-modalCancel:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}',
+  '.dta-modalConfirm{border-color:transparent;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base)}',
+  '.dta-modalConfirm:disabled{opacity:.45;cursor:not-allowed}',
 ].join('')
 
 const TERMINAL_LIMIT = 20
@@ -93,7 +93,7 @@ const startupSentKeys = new Set()
 const terminalSenders = new Map()
 const pendingTerminalCommands = new Map()
 const terminalCaptures = new Map()
-const AGENTS_KEY = 'dsh-terminal-tab:agents'
+const AGENTS_KEY = 'dsh-terminal-agent:agents'
 const HANDOFF_CAPTURE_CHARS = 36_000
 const TERMINAL_CAPTURE_CHARS = 120_000
 
@@ -153,12 +153,12 @@ function insertStyles(css) {
     return styles.insert(css)
   }
   if (typeof document === 'undefined') return function () {}
-  const tagId = 'dsh-plugin-terminal-tab'
+  const tagId = 'dsh-plugin-terminal-agent'
   let tag = document.getElementById(tagId)
   if (tag === null) {
     tag = document.createElement('style')
     tag.id = tagId
-    tag.setAttribute('data-plugin', 'terminal-tab')
+    tag.setAttribute('data-plugin', 'terminal-agent')
     if (document.head !== null) document.head.appendChild(tag)
   }
   tag.textContent = css
@@ -239,7 +239,7 @@ function terminalTitleTooltip(item, agents) {
   return '标题：' + item.title + '\n智能体：' + agentName
 }
 
-function workspaceStorageKey(sessionId) { return 'dsh-terminal-tab:' + sessionId }
+function workspaceStorageKey(sessionId) { return 'dsh-terminal-agent:' + sessionId }
 
 /** 用户消息 content 块 → 纯文本（与 question-index 相同的读取契约）。 */
 function handoffTextFromUserContent(content) {
@@ -434,10 +434,10 @@ function boundedTerminalCapture(value, limit) {
  */
 function renderedTerminalSnapshot(terminalKey) {
   if (typeof document === 'undefined') return ''
-  const panels = document.querySelectorAll('[data-dtt-terminal-key]')
+  const panels = document.querySelectorAll('[data-dta-terminal-key]')
   let panel = null
   for (const candidate of panels) {
-    if (candidate.getAttribute('data-dtt-terminal-key') === terminalKey) {
+    if (candidate.getAttribute('data-dta-terminal-key') === terminalKey) {
       panel = candidate
       break
     }
@@ -467,7 +467,7 @@ function buildHandoffTranscript(messages, capturedText) {
   const lines = [
     '# DSH session transcript',
     '',
-    'This file is historical, read-only context exported by the DSH terminal-tab plugin.',
+    'This file is historical, read-only context exported by the DSH terminal-agent plugin.',
   ]
   if (capturedText !== '') {
     const fence = markdownFence(capturedText)
@@ -520,7 +520,7 @@ function shellQuote(value) {
 }
 
 async function persistHandoffFiles(cwd, transcript, prompt) {
-  const response = await fetch('/api/plugins/terminal-tab/handoff', {
+  const response = await fetch('/api/plugins/terminal-agent/handoff', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ cwd: cwd, transcript: transcript, prompt: prompt }),
@@ -547,7 +547,7 @@ function workspaceFor(sessionId) {
       } catch (e) {}
     }
     if (workspace === undefined) {
-      const initial = terminalRecord(null, 'terminal-tab-1')
+      const initial = terminalRecord(null, 'terminal-agent-1')
       workspace = { terminals: [initial], activeId: initial.id, nextId: 2 }
       persistWorkspace(sessionId, workspace)
     }
@@ -586,7 +586,7 @@ function TerminalBridge(props) {
       const data = logBuffer
       logBuffer = ''
       logWrite = logWrite.then(function () {
-        return fetch('/api/plugins/terminal-tab/terminal-log', {
+        return fetch('/api/plugins/terminal-agent/terminal-log', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ cwd: props.scope.cwd, terminalKey: startupKey, data: data }),
@@ -661,49 +661,49 @@ function AgentSettings() {
     setCommand('')
     setArgs('')
   }
-  return React.createElement('section', { className: 'dtt-settings' },
-    React.createElement('h2', { className: 'dtt-settingsTitle' }, '智能体'),
-    React.createElement('p', { className: 'dtt-settingsDesc' }, '管理终端快捷入口。启用的智能体会显示在终端页签的“+”菜单中。'),
-    React.createElement('div', { className: 'dtt-agentList' }, agents.map(function (agent) {
+  return React.createElement('section', { className: 'dta-settings' },
+    React.createElement('h2', { className: 'dta-settingsTitle' }, '智能体'),
+    React.createElement('p', { className: 'dta-settingsDesc' }, '管理终端智能体。启用的智能体会显示在终端智能体页签的“+”菜单中。'),
+    React.createElement('div', { className: 'dta-agentList' }, agents.map(function (agent) {
       const isExpanded = expanded[agent.id] === true
-      return React.createElement('div', { className: 'dtt-agentCard', key: agent.id },
-        React.createElement('div', { className: 'dtt-agentRow' },
-          React.createElement('div', { className: 'dtt-agentName' }, agent.name),
-          React.createElement('div', { className: 'dtt-agentSummary', title: agent.command + (agent.args ? ' ' + agent.args : '') }, agent.command + (agent.args ? ' ' + agent.args : '')),
+      return React.createElement('div', { className: 'dta-agentCard', key: agent.id },
+        React.createElement('div', { className: 'dta-agentRow' },
+          React.createElement('div', { className: 'dta-agentName' }, agent.name),
+          React.createElement('div', { className: 'dta-agentSummary', title: agent.command + (agent.args ? ' ' + agent.args : '') }, agent.command + (agent.args ? ' ' + agent.args : '')),
           React.createElement('button', {
             type: 'button',
-            className: 'dtt-agentToggle',
+            className: 'dta-agentToggle',
             'data-enabled': String(agent.enabled !== false),
             onClick: function () { saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, enabled: item.enabled === false } : item })) },
           }, agent.enabled === false ? '已禁用' : '启用'),
           agent.builtin ? React.createElement('span', null) : React.createElement('button', {
             type: 'button',
-            className: 'dtt-agentDelete',
+            className: 'dta-agentDelete',
             onClick: function () { saveAgents(agents.filter(function (item) { return item.id !== agent.id })) },
           }, '删除'),
           React.createElement('button', {
             type: 'button',
-            className: 'dtt-agentExpand',
+            className: 'dta-agentExpand',
             'data-expanded': String(isExpanded),
             'aria-expanded': String(isExpanded),
             'aria-label': (isExpanded ? '收起 ' : '展开 ') + agent.name,
             onClick: function () { setExpanded({ ...expanded, [agent.id]: !isExpanded }) },
           }, '⌄'),
         ),
-        isExpanded ? React.createElement('div', { className: 'dtt-agentDetails' },
-          React.createElement('label', { className: 'dtt-agentField' },
-            React.createElement('span', { className: 'dtt-agentFieldLabel' }, '命令'),
+        isExpanded ? React.createElement('div', { className: 'dta-agentDetails' },
+          React.createElement('label', { className: 'dta-agentField' },
+            React.createElement('span', { className: 'dta-agentFieldLabel' }, '命令'),
             React.createElement('input', {
-              className: 'dtt-agentInput',
+              className: 'dta-agentInput',
               value: agent.command,
               'aria-label': agent.name + ' 命令',
               onChange: function (event) { const value = event.target.value; saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, command: value } : item })) },
             }),
           ),
-          React.createElement('label', { className: 'dtt-agentField' },
-            React.createElement('span', { className: 'dtt-agentFieldLabel' }, '参数'),
+          React.createElement('label', { className: 'dta-agentField' },
+            React.createElement('span', { className: 'dta-agentFieldLabel' }, '参数'),
             React.createElement('input', {
-              className: 'dtt-agentInput',
+              className: 'dta-agentInput',
               value: agent.args || '',
               placeholder: '无默认参数',
               'aria-label': agent.name + ' 参数',
@@ -713,16 +713,16 @@ function AgentSettings() {
         ) : null,
       )
     })),
-    React.createElement('div', { className: 'dtt-agentForm' },
+    React.createElement('div', { className: 'dta-agentForm' },
       React.createElement('input', {
-        className: 'dtt-agentInput',
+        className: 'dta-agentInput',
         value: name,
         placeholder: '名称，例如 Claude',
         'aria-label': '智能体名称',
         onChange: function (event) { setName(event.target.value) },
       }),
       React.createElement('input', {
-        className: 'dtt-agentInput',
+        className: 'dta-agentInput',
         value: command,
         placeholder: '默认指令，例如 claude',
         'aria-label': '智能体默认指令',
@@ -730,14 +730,14 @@ function AgentSettings() {
         onKeyDown: function (event) { if (event.key === 'Enter') addAgent() },
       }),
       React.createElement('input', {
-        className: 'dtt-agentInput',
+        className: 'dta-agentInput',
         value: args,
         placeholder: '参数，例如 --dangerously-skip-permissions',
         'aria-label': '智能体启动参数',
         onChange: function (event) { setArgs(event.target.value) },
         onKeyDown: function (event) { if (event.key === 'Enter') addAgent() },
       }),
-      React.createElement('button', { type: 'button', className: 'dtt-agentAdd', onClick: addAgent }, '+ 自定义'),
+      React.createElement('button', { type: 'button', className: 'dta-agentAdd', onClick: addAgent }, '+ 自定义'),
     ),
   )
 }
@@ -831,7 +831,7 @@ function TerminalConversationView(props, ctx) {
   React.useEffect(function () {
     const root = rootRef.current
     if (root === null) return
-    const active = root.querySelector('.dtt-tab[data-active="true"]')
+    const active = root.querySelector('.dta-tab[data-active="true"]')
     if (active !== null && typeof active.scrollIntoView === 'function') {
       active.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     }
@@ -848,7 +848,7 @@ function TerminalConversationView(props, ctx) {
     let secondFrame = null
     const redrawTerminal = function () {
       const root = rootRef.current
-      const panel = root === null ? null : root.querySelector('.dtt-panel:not([hidden])')
+      const panel = root === null ? null : root.querySelector('.dta-panel:not([hidden])')
       if (panel === null) return
       const previousRight = panel.style.right
       panel.style.right = '1px'
@@ -872,7 +872,7 @@ function TerminalConversationView(props, ctx) {
   React.useEffect(function () {
     if (contextMenu === null || typeof document === 'undefined') return
     const dismiss = function (event) {
-      if (event && event.target && typeof event.target.closest === 'function' && event.target.closest('.dtt-contextMenu')) return
+      if (event && event.target && typeof event.target.closest === 'function' && event.target.closest('.dta-contextMenu')) return
       setContextMenu(null)
     }
     const onKeyDown = function (event) { if (event.key === 'Escape') dismiss() }
@@ -887,17 +887,17 @@ function TerminalConversationView(props, ctx) {
   }, [contextMenu])
 
   if (error !== null) {
-    return React.createElement('div', { className: 'dtt-status dtt-error', role: 'alert' }, '终端加载失败：' + error)
+    return React.createElement('div', { className: 'dta-status dta-error', role: 'alert' }, '终端加载失败：' + error)
   }
   if (terminalModule === null) {
-    return React.createElement('div', { className: 'dtt-status' }, '正在加载终端…')
+    return React.createElement('div', { className: 'dta-status' }, '正在加载终端…')
   }
   const updateWorkspace = function (next) {
     publishWorkspace(props.sessionId, next)
   }
   const addTerminal = function (agent) {
     if (workspace.terminals.length >= TERMINAL_LIMIT) return
-    const record = terminalRecord(agent, 'terminal-tab-' + workspace.nextId)
+    const record = terminalRecord(agent, 'terminal-agent-' + workspace.nextId)
     openTerminalKeys.add(props.sessionId + ':' + record.id)
     updateWorkspace({ terminals: workspace.terminals.concat(record), activeId: record.id, nextId: workspace.nextId + 1 })
     setMenuOpen(false)
@@ -1021,7 +1021,7 @@ function TerminalConversationView(props, ctx) {
     const launchLine = commandLine === ''
       ? 'cat ' + shellQuote(files.promptPath)
       : commandLine + ' "$(cat ' + shellQuote(files.promptPath) + ')"'
-    const record = { id: 'terminal-tab-' + workspace.nextId, title: selectedForwardAgent.name, command: launchLine, agentId: selectedForwardAgent.id, agentName: selectedForwardAgent.name }
+    const record = { id: 'terminal-agent-' + workspace.nextId, title: selectedForwardAgent.name, command: launchLine, agentId: selectedForwardAgent.id, agentName: selectedForwardAgent.name }
     const key = props.sessionId + ':' + record.id
     openTerminalKeys.add(key)
     updateWorkspace({ terminals: workspace.terminals.concat(record), activeId: record.id, nextId: workspace.nextId + 1 })
@@ -1042,16 +1042,16 @@ function TerminalConversationView(props, ctx) {
     : workspace.terminals.filter(function (item) { return item.id !== contextMenu.id }).map(function (item) { return item.id })
   return React.createElement(
     'div',
-    { className: 'dtt-workspace', ref: rootRef },
-    React.createElement('div', { className: 'dtt-tabs' },
-      React.createElement('div', { className: 'dtt-tabList', role: 'tablist', 'aria-label': '终端列表' },
+    { className: 'dta-workspace', ref: rootRef },
+    React.createElement('div', { className: 'dta-tabs' },
+      React.createElement('div', { className: 'dta-tabList', role: 'tablist', 'aria-label': '终端智能体列表' },
         workspace.terminals.map(function (item) {
           return React.createElement('button', {
             key: item.id,
             type: 'button',
             role: 'tab',
-            className: 'dtt-tab',
-            'data-terminal-tab-id': item.id,
+            className: 'dta-tab',
+            'data-terminal-agent-id': item.id,
             'data-active': String(item.id === workspace.activeId),
             'aria-selected': String(item.id === workspace.activeId),
             onClick: function () { updateWorkspace({ terminals: workspace.terminals, activeId: item.id, nextId: workspace.nextId }); setMenuOpen(false) },
@@ -1059,7 +1059,7 @@ function TerminalConversationView(props, ctx) {
           },
           editing !== null && editing.id === item.id
             ? React.createElement('input', {
-              className: 'dtt-tabInput',
+              className: 'dta-tabInput',
               value: editing.value,
               autoFocus: true,
               'aria-label': '终端标题',
@@ -1073,12 +1073,12 @@ function TerminalConversationView(props, ctx) {
               },
             })
             : React.createElement('span', {
-              className: 'dtt-tabTitle',
+              className: 'dta-tabTitle',
               onDoubleClick: function (event) { beginRename(item, event) },
               title: terminalTitleTooltip(item, agents),
             }, item.title),
           workspace.terminals.length > 1 ? React.createElement('span', {
-            className: 'dtt-tabClose',
+            className: 'dta-tabClose',
             role: 'button',
             tabIndex: 0,
             'aria-label': '关闭 ' + item.title,
@@ -1087,38 +1087,38 @@ function TerminalConversationView(props, ctx) {
           }, '×') : null)
         }),
       ),
-      React.createElement('div', { className: 'dtt-addWrap' },
+      React.createElement('div', { className: 'dta-addWrap' },
         React.createElement('button', {
           type: 'button',
-          className: 'dtt-add',
+          className: 'dta-add',
           disabled: workspace.terminals.length >= TERMINAL_LIMIT,
           'aria-label': '新建终端',
           'aria-haspopup': 'menu',
           'aria-expanded': String(menuOpen),
           onClick: function () { setMenuOpen(!menuOpen) },
         }, '+'),
-        menuOpen ? React.createElement('div', { className: 'dtt-menu', role: 'menu' },
+        menuOpen ? React.createElement('div', { className: 'dta-menu', role: 'menu' },
           React.createElement('button', {
             type: 'button',
-            className: 'dtt-menuItem',
+            className: 'dta-menuItem',
             role: 'menuitem',
             onClick: function () { addTerminal(null) },
           },
-            React.createElement('span', { className: 'dtt-menuIcon' }, '＋'),
+            React.createElement('span', { className: 'dta-menuIcon' }, '＋'),
             '新终端'),
           agents.filter(function (agent) { return agent.enabled !== false }).map(function (agent) {
-            return React.createElement('button', { key: agent.id, type: 'button', className: 'dtt-menuItem', role: 'menuitem', onClick: function () { addTerminal(agent) } },
-              React.createElement('span', { className: 'dtt-menuIcon' }, agent.name.slice(0, 2)), agent.name)
+            return React.createElement('button', { key: agent.id, type: 'button', className: 'dta-menuItem', role: 'menuitem', onClick: function () { addTerminal(agent) } },
+              React.createElement('span', { className: 'dta-menuIcon' }, agent.name.slice(0, 2)), agent.name)
           }),
         ) : null,
       ),
     ),
-    React.createElement('div', { className: 'dtt-panels' }, workspace.terminals.map(function (item) {
+    React.createElement('div', { className: 'dta-panels' }, workspace.terminals.map(function (item) {
       const scope = { sessionId: props.sessionId, cwd: cwd }
       return React.createElement('div', {
         key: item.id,
-        className: 'dtt-panel',
-        'data-dtt-terminal-key': props.sessionId + ':' + item.id,
+        className: 'dta-panel',
+        'data-dta-terminal-key': props.sessionId + ':' + item.id,
         hidden: item.id !== workspace.activeId,
       },
         React.createElement(terminalModule.TerminalView, { scope: scope, tabId: item.id, store: terminalStore }),
@@ -1126,63 +1126,63 @@ function TerminalConversationView(props, ctx) {
       )
     })),
     contextMenu !== null && contextIndex >= 0 ? React.createElement('div', {
-      className: 'dtt-contextMenu',
+      className: 'dta-contextMenu',
       role: 'menu',
       style: { left: contextMenu.x, top: contextMenu.y },
       onContextMenu: function (event) { event.preventDefault() },
     },
       React.createElement('button', {
-        type: 'button', className: 'dtt-contextItem', role: 'menuitem',
+        type: 'button', className: 'dta-contextItem', role: 'menuitem',
         disabled: workspace.terminals.length <= 1,
         onClick: function () { requestCloseTerminals([contextMenu.id], '关闭当前终端') },
       }, '关闭当前'),
       React.createElement('button', {
-        type: 'button', className: 'dtt-contextItem', role: 'menuitem',
+        type: 'button', className: 'dta-contextItem', role: 'menuitem',
         disabled: contextOtherIds.length === 0,
         onClick: function () { requestCloseTerminals(contextOtherIds, '关闭其他终端') },
       }, '关闭其他'),
-      React.createElement('div', { className: 'dtt-contextDivider', role: 'separator' }),
+      React.createElement('div', { className: 'dta-contextDivider', role: 'separator' }),
       React.createElement('button', {
-        type: 'button', className: 'dtt-contextItem', role: 'menuitem',
+        type: 'button', className: 'dta-contextItem', role: 'menuitem',
         disabled: contextRightIds.length === 0,
         onClick: function () { requestCloseTerminals(contextRightIds, '关闭右侧终端') },
       }, '关闭右侧'),
       React.createElement('button', {
-        type: 'button', className: 'dtt-contextItem', role: 'menuitem',
+        type: 'button', className: 'dta-contextItem', role: 'menuitem',
         disabled: contextLeftIds.length === 0,
         onClick: function () { requestCloseTerminals(contextLeftIds, '关闭左侧终端') },
       }, '关闭左侧'),
     ) : null,
     closeConfirm !== null ? React.createElement('div', {
-      className: 'dtt-modalMask',
+      className: 'dta-modalMask',
       onMouseDown: function (event) { if (event.target === event.currentTarget) setCloseConfirm(null) },
     },
       React.createElement('div', {
-        className: 'dtt-modal',
+        className: 'dta-modal',
         role: 'alertdialog',
         'aria-modal': 'true',
-        'aria-labelledby': 'dtt-close-confirm-title',
+        'aria-labelledby': 'dta-close-confirm-title',
       },
-        React.createElement('div', { className: 'dtt-modalHead' },
-          React.createElement('h3', { id: 'dtt-close-confirm-title', className: 'dtt-modalTitle' }, closeConfirm.action),
+        React.createElement('div', { className: 'dta-modalHead' },
+          React.createElement('h3', { id: 'dta-close-confirm-title', className: 'dta-modalTitle' }, closeConfirm.action),
           React.createElement('button', {
-            type: 'button', className: 'dtt-modalClose', 'aria-label': '取消关闭',
+            type: 'button', className: 'dta-modalClose', 'aria-label': '取消关闭',
             onClick: function () { setCloseConfirm(null) },
           }, '×'),
         ),
-        React.createElement('p', { className: 'dtt-modalDesc' },
+        React.createElement('p', { className: 'dta-modalDesc' },
           '确定要关闭 ' + closeConfirm.ids.length + ' 个终端吗？终端中正在运行的程序将被停止，此操作无法撤销。'),
-        React.createElement('div', { className: 'dtt-modalBox' },
-          React.createElement('p', { className: 'dtt-modalBoxTitle' }, closeConfirm.ids.length === 1 ? '终端标题' : '将关闭的终端'),
-          React.createElement('p', { className: 'dtt-modalBoxText', style: { whiteSpace: 'pre-wrap' } }, closeConfirm.titles.join('\n')),
+        React.createElement('div', { className: 'dta-modalBox' },
+          React.createElement('p', { className: 'dta-modalBoxTitle' }, closeConfirm.ids.length === 1 ? '终端标题' : '将关闭的终端'),
+          React.createElement('p', { className: 'dta-modalBoxText', style: { whiteSpace: 'pre-wrap' } }, closeConfirm.titles.join('\n')),
         ),
-        React.createElement('div', { className: 'dtt-modalActions' },
+        React.createElement('div', { className: 'dta-modalActions' },
           React.createElement('button', {
-            type: 'button', className: 'dtt-modalCancel',
+            type: 'button', className: 'dta-modalCancel',
             onClick: function () { setCloseConfirm(null) },
           }, '取消'),
           React.createElement('button', {
-            type: 'button', className: 'dtt-modalConfirm', autoFocus: true,
+            type: 'button', className: 'dta-modalConfirm', autoFocus: true,
             onClick: function () {
               const ids = closeConfirm.ids
               setCloseConfirm(null)
@@ -1194,7 +1194,7 @@ function TerminalConversationView(props, ctx) {
     ) : null,
     React.createElement('button', {
       type: 'button',
-      className: 'dtt-forward',
+      className: 'dta-forward',
       title: '交接',
       'aria-label': '交接',
       'aria-haspopup': 'dialog',
@@ -1206,38 +1206,38 @@ function TerminalConversationView(props, ctx) {
         React.createElement('path', { d: 'M8 12h7.5M12.5 8.5 16 12l-3.5 3.5', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }),
       ),
     ),
-    forwardOpen ? React.createElement('div', { className: 'dtt-modalMask' },
-      React.createElement('div', { className: 'dtt-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': '交接' },
-        React.createElement('div', { className: 'dtt-modalHead' },
-          React.createElement('h3', { className: 'dtt-modalTitle' }, '交接'),
+    forwardOpen ? React.createElement('div', { className: 'dta-modalMask' },
+      React.createElement('div', { className: 'dta-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': '交接' },
+        React.createElement('div', { className: 'dta-modalHead' },
+          React.createElement('h3', { className: 'dta-modalTitle' }, '交接'),
           React.createElement('button', {
-            type: 'button', className: 'dtt-modalClose', 'aria-label': '关闭',
+            type: 'button', className: 'dta-modalClose', 'aria-label': '关闭',
             onClick: function () { setForwardOpen(false) },
           }, '×'),
         ),
-        React.createElement('p', { className: 'dtt-modalDesc' }, '将当前会话的上下文交接给选中的智能体；原智能体会话保持不变。'),
-        React.createElement('div', { className: 'dtt-modalBox' },
-          React.createElement('p', { className: 'dtt-modalBoxTitle' }, '当前会话'),
-          React.createElement('p', { className: 'dtt-modalBoxText' }, '启动目录：' + (typeof cwd === 'string' && cwd !== '' ? cwd : '未知')),
+        React.createElement('p', { className: 'dta-modalDesc' }, '将当前会话的上下文交接给选中的智能体；原智能体会话保持不变。'),
+        React.createElement('div', { className: 'dta-modalBox' },
+          React.createElement('p', { className: 'dta-modalBoxTitle' }, '当前会话'),
+          React.createElement('p', { className: 'dta-modalBoxText' }, '启动目录：' + (typeof cwd === 'string' && cwd !== '' ? cwd : '未知')),
         ),
-        React.createElement('label', { className: 'dtt-modalLabel' }, '智能体'),
+        React.createElement('label', { className: 'dta-modalLabel' }, '智能体'),
         enabledAgents.length > 0 ? React.createElement('select', {
-          className: 'dtt-modalSelect',
+          className: 'dta-modalSelect',
           value: selectedForwardAgent !== null ? selectedForwardAgent.id : '',
           autoFocus: true,
           onChange: function (event) { setForwardAgentId(event.target.value) },
         }, enabledAgents.map(function (agent) {
           return React.createElement('option', { key: agent.id, value: agent.id },
             agent.name + '（' + agent.command + (agent.args.trim() === '' ? '' : ' ' + agent.args.trim()) + '）')
-        })) : React.createElement('p', { className: 'dtt-modalWarn' }, '暂无已启用的智能体，请先在“设置 → 智能体”中启用。'),
-        forwardError !== '' ? React.createElement('p', { className: 'dtt-modalWarn', role: 'alert' }, forwardError) : null,
-        React.createElement('div', { className: 'dtt-modalActions' },
+        })) : React.createElement('p', { className: 'dta-modalWarn' }, '暂无已启用的智能体，请先在“设置 → 智能体”中启用。'),
+        forwardError !== '' ? React.createElement('p', { className: 'dta-modalWarn', role: 'alert' }, forwardError) : null,
+        React.createElement('div', { className: 'dta-modalActions' },
           React.createElement('button', {
-            type: 'button', className: 'dtt-modalCancel',
+            type: 'button', className: 'dta-modalCancel',
             onClick: function () { setForwardOpen(false) },
           }, '取消'),
           React.createElement('button', {
-            type: 'button', className: 'dtt-modalConfirm',
+            type: 'button', className: 'dta-modalConfirm',
             disabled: selectedForwardAgent === null || workspace.terminals.length >= TERMINAL_LIMIT || forwarding,
             onClick: confirmForward,
           }, forwarding ? '正在交接…' : '确认交接'),
@@ -1258,7 +1258,7 @@ export function apply(ctx) {
         const workspace = workspaceFor(detail.sessionId)
         if (workspace.terminals.length >= TERMINAL_LIMIT) return
         const record = {
-          id: 'terminal-tab-' + workspace.nextId,
+          id: 'terminal-agent-' + workspace.nextId,
           title: typeof detail.title === 'string' && detail.title !== '' ? detail.title : '智能体',
           command: detail.command,
           agentId: typeof detail.agentId === 'string' ? detail.agentId : null,
@@ -1271,15 +1271,15 @@ export function apply(ctx) {
           nextId: workspace.nextId + 1,
         })
       }
-      window.addEventListener('dsh-terminal-tab:handoff', receiveHandoff)
-      return function () { window.removeEventListener('dsh-terminal-tab:handoff', receiveHandoff) }
+      window.addEventListener('dsh-terminal-agent:handoff', receiveHandoff)
+      return function () { window.removeEventListener('dsh-terminal-agent:handoff', receiveHandoff) }
     })
   }
-  ctx.effect(function () { return insertStyles(CSS) }, 'terminal-tab: styles')
+  ctx.effect(function () { return insertStyles(CSS) }, 'terminal-agent: styles')
   ctx.slots.inject('settings.section', function () {
     return ctx.slots.register({
       name: 'settings.section',
-      id: 'terminal-agents',
+      id: 'terminal-agent',
       order: 45,
       label: '智能体',
     }, AgentSettings)
@@ -1287,9 +1287,9 @@ export function apply(ctx) {
   ctx.slots.inject('conversation.view', function () {
     return ctx.slots.register({
       name: 'conversation.view',
-      id: 'terminal',
+      id: 'terminal-agent',
       order: 20,
-      label: '终端',
+      label: '终端智能体',
     }, function (props) { return React.createElement(TerminalConversationView, props, ctx) })
   })
 }

@@ -31,7 +31,7 @@ async function persistHandoff(body) {
     throw new Error('当前工程目录无效，无法保存交接上下文')
   }
   const workspacePath = resolve(body.cwd.trim())
-  const handoffDir = join(workspacePath, '.dsh', 'terminal-tab-handoffs')
+  const handoffDir = join(workspacePath, '.dsh', 'terminal-agent-handoffs')
   await mkdir(handoffDir, { recursive: true, mode: 0o700 })
   const id = randomUUID()
   const transcriptPath = join(handoffDir, id + '.transcript.md')
@@ -58,7 +58,7 @@ function safeTerminalFileName(value) {
 
 async function appendTerminalLog(body) {
   if (typeof body.data !== 'string' || body.data === '') throw new Error('终端日志内容无效')
-  const logDir = join(workspaceDirectory(body.cwd), '.dsh', 'terminal-logs')
+  const logDir = join(workspaceDirectory(body.cwd), '.dsh', 'terminal-agent-logs')
   await mkdir(logDir, { recursive: true, mode: 0o700 })
   const logPath = join(logDir, safeTerminalFileName(body.terminalKey) + '.ansi.log')
   await appendFile(logPath, body.data, { encoding: 'utf8', mode: 0o600 })
@@ -70,7 +70,7 @@ export function apply(ctx) {
     if (!webServer || typeof webServer.register !== 'function') return
     return webServer.register({
       kind: 'prefix',
-      path: '/api/plugins/terminal-tab',
+      path: '/api/plugins/terminal-agent',
       async handler(req, res) {
         if (req.method !== 'POST' || !req.url) {
           jsonResponse(res, 404, { ok: false, error: 'not found' })

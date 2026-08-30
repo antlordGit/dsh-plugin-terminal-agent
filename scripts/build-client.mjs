@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const PKG_ID = 'dsh-plugin-terminal-tab'
+const PKG_ID = 'dsh-plugin-terminal-agent'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const srcPath = join(root, 'src', 'client.js')
 const outPath = join(root, 'lib', 'client.js')

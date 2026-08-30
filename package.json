@@ -1,7 +1,7 @@
 {
-  "name": "dsh-plugin-terminal-tab",
-  "description": "在 DSH 会话的对话与轨迹旁新增终端页签，复用 dsh-better-sidebar 的原生终端面板。",
-  "version": "0.1.0",
+  "name": "dsh-plugin-terminal-agent",
+  "description": "在 DSH 会话中提供终端智能体面板，作为对话与轨迹之外的第三种会话形态。",
+  "version": "0.2.0",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -41,6 +41,7 @@
     "dsh-plugin",
     "cordis",
     "deepseek-harness",
-    "terminal"
+    "terminal",
+    "agent"
   ]
 }

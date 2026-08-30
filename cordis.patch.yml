@@ -6,5 +6,5 @@
     terminalsPerSession: 20
 
 - insert:
-    - id: terminal-tab
-      name: 'dsh-plugin-terminal-tab'
+    - id: terminal-agent
+      name: 'dsh-plugin-terminal-agent'
