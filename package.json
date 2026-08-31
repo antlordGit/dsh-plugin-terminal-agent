@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-terminal-agent",
   "description": "在 DSH 会话中提供终端智能体面板，作为对话与轨迹之外的第三种会话形态。",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -18,6 +18,8 @@
   ],
   "scripts": {
     "build": "node scripts/build-client.mjs",
+    "test": "node --test test/*.test.js",
+    "check": "npm test && npm run build",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

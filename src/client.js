@@ -4,6 +4,19 @@
  * lazy: it is fetched only after the user opens the terminal-agent view.
  */
 import React from 'react'
+import {
+  appendTerminalTitleInput,
+  backspaceTerminalTitleInput,
+  createTerminalTitleInput,
+  createTerminalRenameCommand,
+  submitTerminalTitleInput,
+} from './terminal-title.js'
+import {
+  appendTerminalUserInput,
+  backspaceTerminalUserInput,
+  createTerminalUserInput,
+  submitTerminalUserInput,
+} from './terminal-user-input.js'
 
 const CSS = [
   '.dta-workspace{--dta-surface:var(--dsw-alias-bg-overlay);--dta-surface-raised:var(--dsw-alias-bg-layer-1);--dta-surface-hover:var(--dsw-alias-interactive-bg-hover);--dta-control-bg:var(--dsw-alias-bg-base);--dta-outline:var(--dsw-alias-border-l2);--dta-shadow:color-mix(in srgb,var(--dsw-alias-label-primary) 14%,transparent);--dta-mask:color-mix(in srgb,var(--dsw-alias-label-primary) 38%,transparent);box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base)}',
@@ -117,6 +130,8 @@ const startupSentKeys = new Set()
 const terminalSenders = new Map()
 const pendingTerminalCommands = new Map()
 const terminalCaptures = new Map()
+const terminalTitleInputs = new Map()
+const terminalUserInputs = new Map()
 // TerminalView is owned by the current conversation view and is unmounted
 // whenever the user switches projects or sessions. Keep a second attachment
 // outside React's view lifetime so the Host PTY (and its foreground agent)
@@ -312,8 +327,48 @@ const terminalStore = {
 
 function terminalRecord(agent, id) {
   return agent === null
-    ? { id: id, title: '终端', command: null, agentId: null, agentName: null }
-    : { id: id, title: agent.name, command: agent.command + (agent.args.trim() === '' ? '' : ' ' + agent.args.trim()), agentId: agent.id, agentName: agent.name }
+    ? { id: id, title: '终端', command: null, agentId: null, agentName: null, firstInputCaptured: false }
+    : { id: id, title: agent.name, command: agent.command + (agent.args.trim() === '' ? '' : ' ' + agent.args.trim()), agentId: agent.id, agentName: agent.name, firstInputCaptured: false }
+}
+
+function terminalTitleInputFor(terminalKey, consumed) {
+  let state = terminalTitleInputs.get(terminalKey)
+  if (state === undefined || (consumed === true && state.consumed !== true)) {
+    state = createTerminalTitleInput(consumed)
+    terminalTitleInputs.set(terminalKey, state)
+  }
+  return state
+}
+
+function terminalUserInputFor(terminalKey) {
+  let state = terminalUserInputs.get(terminalKey)
+  if (state === undefined) {
+    state = createTerminalUserInput()
+    terminalUserInputs.set(terminalKey, state)
+  }
+  return state
+}
+
+function localDateKey() {
+  const now = new Date()
+  const pad = function (value) { return String(value).padStart(2, '0') }
+  return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+}
+
+function persistTerminalUserInput(cwd, terminalKey, terminalTitle, text) {
+  if (!cwd || typeof fetch !== 'function' || typeof text !== 'string' || text === '') return
+  fetch('/api/plugins/terminal-agent/terminal-input', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      cwd: cwd,
+      terminalKey: terminalKey,
+      terminalTitle: terminalTitle,
+      date: localDateKey(),
+      time: Date.now(),
+      text: text,
+    }),
+  }).catch(function () {})
 }
 
 function terminalTitleTooltip(item, agents) {
@@ -1143,6 +1198,8 @@ function TerminalConversationView(props, ctx) {
       startupSentKeys.delete(key)
       closeTerminalBridge(key)
       terminalCaptures.delete(key)
+      terminalTitleInputs.delete(key)
+      terminalUserInputs.delete(key)
       pendingTerminalCommands.delete(key)
       // Closing the Host PTY terminates the foreground process as well as its
       // shell. Do this for every tab before removing it from the UI.
@@ -1186,10 +1243,63 @@ function TerminalConversationView(props, ctx) {
     const trimmed = title.trim()
     if (trimmed === '') return
     updateWorkspace({
-      terminals: workspace.terminals.map(function (item) { return item.id === id ? { ...item, title: trimmed } : item }),
+      terminals: workspace.terminals.map(function (item) { return item.id === id ? { ...item, title: trimmed, firstInputCaptured: true } : item }),
       activeId: workspace.activeId,
       nextId: workspace.nextId,
     })
+  }
+  const sendTerminalRename = function (item, title, delay) {
+    const key = props.sessionId + ':' + item.id
+    const command = createTerminalRenameCommand(title, item.command !== null)
+    const sender = terminalSenders.get(key)
+    if (typeof sender !== 'function') {
+      pendingTerminalCommands.set(key, command)
+      return
+    }
+    window.setTimeout(function () {
+      sender(command.text)
+      window.setTimeout(function () { sender(command.enter) }, 40)
+    }, delay)
+  }
+  const captureTerminalTitleText = function (item, text) {
+    if (item.firstInputCaptured === true) return
+    const key = props.sessionId + ':' + item.id
+    terminalTitleInputs.set(key, appendTerminalTitleInput(terminalTitleInputFor(key, false), text))
+  }
+  const backspaceTerminalTitle = function (item) {
+    if (item.firstInputCaptured === true) return
+    const key = props.sessionId + ':' + item.id
+    terminalTitleInputs.set(key, backspaceTerminalTitleInput(terminalTitleInputFor(key, false)))
+  }
+  const submitTerminalTitle = function (item) {
+    if (item.firstInputCaptured === true) return
+    const key = props.sessionId + ':' + item.id
+    const result = submitTerminalTitleInput(terminalTitleInputFor(key, false))
+    terminalTitleInputs.set(key, result.state)
+    if (result.title === null) return
+    updateWorkspace({
+      terminals: workspace.terminals.map(function (candidate) {
+        return candidate.id === item.id ? { ...candidate, title: result.title, firstInputCaptured: true } : candidate
+      }),
+      activeId: workspace.activeId,
+      nextId: workspace.nextId,
+    })
+    // 先让当前 Enter 提交用户原文，再通过同一 PTY 设置智能体会话名。
+    sendTerminalRename(item, result.title, 80)
+  }
+  const captureTerminalUserText = function (item, text) {
+    const key = props.sessionId + ':' + item.id
+    terminalUserInputs.set(key, appendTerminalUserInput(terminalUserInputFor(key), text))
+  }
+  const backspaceTerminalUserText = function (item) {
+    const key = props.sessionId + ':' + item.id
+    terminalUserInputs.set(key, backspaceTerminalUserInput(terminalUserInputFor(key)))
+  }
+  const submitTerminalUserText = function (item) {
+    const key = props.sessionId + ':' + item.id
+    const result = submitTerminalUserInput(terminalUserInputFor(key))
+    terminalUserInputs.set(key, result.state)
+    if (result.text !== null) persistTerminalUserInput(cwd, key, item.title, result.text)
   }
   const beginRename = function (item, event) {
     event.preventDefault()
@@ -1202,15 +1312,8 @@ function TerminalConversationView(props, ctx) {
     setEditing(null)
     if (title === '') return
     renameTerminal(editing.id, title)
-    const key = props.sessionId + ':' + editing.id
     const terminal = workspace.terminals.find(function (item) { return item.id === editing.id })
-    const command = { text: '/rename ' + title, enter: terminal && terminal.command !== null ? '\x1b[13u' : '\r' }
-    const sender = terminalSenders.get(key)
-    if (typeof sender === 'function') {
-      sender(command.text)
-      window.setTimeout(function () { sender(command.enter) }, 40)
-    }
-    else pendingTerminalCommands.set(key, command)
+    if (terminal !== undefined) sendTerminalRename(terminal, title, 0)
   }
   const selectedForwardAgent = enabledAgents.find(function (agent) { return agent.id === forwardAgentId })
     || enabledAgents[0]
@@ -1252,7 +1355,7 @@ function TerminalConversationView(props, ctx) {
     const launchLine = commandLine === ''
       ? 'cat ' + shellQuote(files.promptPath)
       : commandLine + ' "$(cat ' + shellQuote(files.promptPath) + ')"'
-    const record = { id: 'terminal-agent-' + workspace.nextId, title: selectedForwardAgent.name, command: launchLine, agentId: selectedForwardAgent.id, agentName: selectedForwardAgent.name }
+    const record = { id: 'terminal-agent-' + workspace.nextId, title: selectedForwardAgent.name, command: launchLine, agentId: selectedForwardAgent.id, agentName: selectedForwardAgent.name, firstInputCaptured: false }
     const key = props.sessionId + ':' + record.id
     openTerminalKeys.add(key)
     updateWorkspace({ terminals: workspace.terminals.concat(record), activeId: record.id, nextId: workspace.nextId + 1 })
@@ -1378,6 +1481,17 @@ function TerminalConversationView(props, ctx) {
         key: item.id,
         className: 'dta-panel',
         'data-dta-terminal-key': props.sessionId + ':' + item.id,
+        onKeyDownCapture: function (event) {
+          if (event.isComposing) return
+          if (event.key === 'Enter') { submitTerminalTitle(item); submitTerminalUserText(item) }
+          else if (event.key === 'Backspace') { backspaceTerminalTitle(item); backspaceTerminalUserText(item) }
+          else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) { captureTerminalTitleText(item, event.key); captureTerminalUserText(item, event.key) }
+        },
+        onCompositionEndCapture: function (event) { captureTerminalTitleText(item, event.data); captureTerminalUserText(item, event.data) },
+        onPasteCapture: function (event) {
+          const text = event.clipboardData && event.clipboardData.getData('text/plain')
+          if (typeof text === 'string' && text !== '') { captureTerminalTitleText(item, text); captureTerminalUserText(item, text) }
+        },
         hidden: item.id !== workspace.activeId,
       },
         React.createElement(terminalModule.TerminalView, { scope: scope, tabId: item.id, store: terminalStore }),
@@ -1525,6 +1639,7 @@ export function apply(ctx) {
           command: detail.command,
           agentId: typeof detail.agentId === 'string' ? detail.agentId : null,
           agentName: typeof detail.agentName === 'string' && detail.agentName !== '' ? detail.agentName : (typeof detail.title === 'string' ? detail.title : null),
+          firstInputCaptured: false,
         }
         openTerminalKeys.add(detail.sessionId + ':' + record.id)
         publishWorkspace(detail.sessionId, {
