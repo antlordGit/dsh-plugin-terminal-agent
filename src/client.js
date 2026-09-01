@@ -17,7 +17,7 @@ import {
   createTerminalUserInput,
   submitTerminalUserInput,
 } from './terminal-user-input.js'
-import { createTerminalShortcutCommand } from './terminal-shortcut.js'
+import { createTerminalShortcutCommand, shortcutMatchesWorkspace } from './terminal-shortcut.js'
 
 const CSS = [
   '.dta-workspace{--dta-surface:var(--dsw-alias-bg-overlay);--dta-surface-raised:var(--dsw-alias-bg-layer-1);--dta-surface-hover:var(--dsw-alias-interactive-bg-hover);--dta-control-bg:var(--dsw-alias-bg-base);--dta-outline:var(--dsw-alias-border-l2);--dta-shadow:color-mix(in srgb,var(--dsw-alias-label-primary) 14%,transparent);--dta-mask:color-mix(in srgb,var(--dsw-alias-label-primary) 38%,transparent);box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base)}',
@@ -57,29 +57,33 @@ const CSS = [
   'body:not([data-ds-dark-theme]) .dta-panel .xterm-rows .xterm-bg-0,body:not([data-ds-dark-theme]) .dta-panel .xterm-rows .xterm-bg-257,body:not([data-ds-dark-theme]) .dta-panel .xterm-rows span[style*="background-color: rgb(56, 58, 66)"],body:not([data-ds-dark-theme]) .dta-panel .xterm-rows span[style*="background-color:#383a42"],body:not([data-ds-dark-theme]) .dta-panel .xterm-rows span[style*="background-color: #383a42"]{background-color:var(--dsw-alias-bg-layer-2)!important;color:var(--dsw-alias-label-primary)!important}',
   '.dta-status{box-sizing:border-box;height:100%;display:grid;place-items:center;padding:24px;color:var(--dsw-alias-label-secondary);font-size:13px}',
   '.dta-error{color:var(--dsw-alias-state-error-primary);white-space:pre-wrap;text-align:center}',
-  '.dta-settings{box-sizing:border-box;max-width:760px;padding:28px 32px;color:var(--dsw-alias-label-primary)}',
-  '.dta-settingsTitle{margin:0 0 6px;font-size:20px;font-weight:650}',
-  '.dta-settingsDesc{margin:0 0 24px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}',
-  '.dta-agentList{border-top:1px solid var(--dsw-alias-border-l1)}',
-  '.dta-agentCard{border-bottom:1px solid var(--dsw-alias-border-l1)}',
-  '.dta-agentRow{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(200px,1.5fr) auto auto auto;align-items:center;gap:12px;min-height:62px}',
+  '.dta-settings{--dta-surface:var(--dsw-alias-bg-overlay);--dta-surface-raised:var(--dsw-alias-bg-layer-1);--dta-surface-hover:var(--dsw-alias-interactive-bg-hover);--dta-control-bg:var(--dsw-alias-bg-base);--dta-outline:var(--dsw-alias-border-l2);container-type:inline-size;box-sizing:border-box;width:100%;max-width:920px;padding:28px 32px 48px;color:var(--dsw-alias-label-primary);overflow-x:hidden}',
+  'body[data-ds-dark-theme] .dta-settings{--dta-surface:#202226;--dta-surface-raised:#26282d;--dta-surface-hover:#30333a;--dta-control-bg:#191b1f;--dta-outline:#3b3e46;color-scheme:dark}',
+  '.dta-settingsTitle{margin:0 0 6px;font-size:22px;font-weight:680;letter-spacing:-.02em}',
+  '.dta-settingsDesc{max-width:62ch;margin:0 0 26px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.65}',
+  '.dta-agentList{display:grid;gap:10px}',
+  '.dta-agentCard{overflow:hidden;border:1px solid var(--dta-outline);border-radius:12px;background:color-mix(in srgb,var(--dta-surface-raised) 52%,transparent);transition:border-color .18s ease,background .18s ease,box-shadow .18s ease}',
+  '.dta-agentCard[data-expanded="true"]{overflow:visible;border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 18%,var(--dta-outline));background:var(--dta-surface-raised);box-shadow:0 8px 24px color-mix(in srgb,var(--dsw-alias-label-primary) 6%,transparent)}',
+  '.dta-agentRow{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(200px,1.5fr) auto auto auto;align-items:center;gap:12px;min-height:64px;padding:0 14px}',
   '.dta-agentName{font-size:14px;font-weight:520}.dta-agentSummary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font:12px/1.5 var(--ds-font-family-code)}',
-  '.dta-agentDetails{display:grid;grid-template-columns:1fr 1.35fr;gap:12px;padding:0 0 16px 142px}',
-  '.dta-shortcuts{grid-column:1/-1;margin-top:4px;padding-top:14px;border-top:1px solid var(--dsw-alias-border-l1)}',
-  '.dta-shortcutHead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}.dta-shortcutTitle{font-size:12px;font-weight:650}.dta-shortcutHint{color:var(--dsw-alias-label-tertiary);font-size:10.5px}',
-  '.dta-shortcutList{display:grid;gap:8px}.dta-shortcutRow{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(180px,1.5fr) auto auto;align-items:center;gap:8px}.dta-shortcutCommand{font-family:var(--ds-font-family-code)}',
+  '.dta-agentDetails{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:12px;padding:16px 18px 18px;border-top:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb,var(--dta-control-bg) 38%,transparent)}',
+  '.dta-shortcuts{grid-column:1/-1;margin-top:6px;padding:16px;border:1px solid var(--dta-outline);border-radius:11px;background:var(--dta-surface)}',
+  '.dta-shortcutHead{display:flex;align-items:baseline;justify-content:space-between;gap:18px;margin-bottom:12px}.dta-shortcutTitle{font-size:13px;font-weight:650}.dta-shortcutHint{color:var(--dsw-alias-label-tertiary);font-size:11px;line-height:1.5;text-align:right}',
+  '.dta-shortcutColumns{display:none}.dta-shortcutList{display:grid;gap:10px}.dta-shortcutRow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.35fr) auto auto;align-items:center;gap:9px;padding:11px;border:1px solid color-mix(in srgb,var(--dta-outline) 72%,transparent);border-radius:11px;background:color-mix(in srgb,var(--dta-surface-raised) 72%,transparent);transition:border-color .16s ease,background .16s ease}.dta-shortcutRow:hover{border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 22%,var(--dta-outline));background:var(--dta-surface-raised)}.dta-shortcutRow>.dta-agentSelectInput,.dta-shortcutRow>.dta-workspaceSelect{grid-column:1/3}.dta-shortcutCommand{font-family:var(--ds-font-family-code)}',
   '.dta-shortcutEmpty{margin:0 0 10px;color:var(--dsw-alias-label-tertiary);font-size:11.5px}',
-  '.dta-shortcutForm{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(180px,1.5fr) auto;gap:8px;margin-top:10px}',
+  '.dta-shortcutForm{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.35fr) auto auto;gap:9px;margin-top:14px;padding:14px 11px 11px;border:1px dashed color-mix(in srgb,var(--dsw-alias-label-secondary) 42%,var(--dta-outline));border-radius:11px;background:color-mix(in srgb,var(--dta-control-bg) 58%,transparent)}.dta-shortcutForm>.dta-agentSelectInput,.dta-shortcutForm>.dta-workspaceSelect{grid-column:1/3}.dta-shortcutForm>.dta-agentAdd{grid-column:3/5;min-width:120px}',
   '.dta-agentField{min-width:0}.dta-agentFieldLabel{display:block;margin-bottom:4px;color:var(--dsw-alias-label-tertiary);font-size:10px}',
-  '.dta-agentToggle,.dta-agentDelete,.dta-agentAdd{border:1px solid var(--dta-outline);border-radius:7px;background:var(--dta-surface-raised);color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px;transition:background .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}',
+  '.dta-agentToggle,.dta-agentDelete,.dta-agentAdd{min-height:30px;border:1px solid var(--dta-outline);border-radius:7px;background:var(--dta-surface-raised);color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px;white-space:nowrap;transition:background .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}',
   '.dta-agentToggle{padding:5px 10px}.dta-agentToggle[data-enabled="true"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base)}',
   '.dta-agentDelete{padding:5px 8px}.dta-agentDelete:hover{background:var(--dta-surface-hover);color:var(--dsw-alias-state-error-primary)}',
   '.dta-agentExpand{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:16px;transition:transform .15s ease}.dta-agentExpand[data-expanded="true"]{transform:rotate(180deg)}.dta-agentExpand:hover{background:var(--dsw-alias-interactive-bg-hover)}',
-  '.dta-agentForm{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;margin-top:20px}',
-  '.dta-agentInput{width:100%;height:36px;box-sizing:border-box;padding:0 10px;border:1px solid var(--dta-outline);border-radius:8px;outline:none;background:var(--dta-control-bg);color:var(--dsw-alias-label-primary);caret-color:var(--dsw-alias-brand-primary);font-size:13px;transition:border-color .14s ease,box-shadow .14s ease,background .14s ease}',
+  '.dta-agentForm{display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:10px;margin-top:18px;padding:14px;border:1px dashed var(--dta-outline);border-radius:11px;background:color-mix(in srgb,var(--dta-surface-raised) 42%,transparent)}',
+  '.dta-agentInput{min-width:0;width:100%;height:36px;box-sizing:border-box;padding:0 10px;border:1px solid var(--dta-outline);border-radius:8px;outline:none;background:var(--dta-control-bg);color:var(--dsw-alias-label-primary);caret-color:var(--dsw-alias-brand-primary);font-size:13px;transition:border-color .14s ease,box-shadow .14s ease,background .14s ease}',
   '.dta-agentInput::placeholder{color:var(--dsw-alias-label-tertiary);opacity:.82}',
   '.dta-agentInput:hover{border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 24%,var(--dta-outline))}',
   '.dta-agentInput:focus-visible{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 20%,transparent)}',
+  '.dta-agentSelectInput{min-width:0;width:100%;height:36px;box-sizing:border-box;padding:0 32px 0 10px;border:1px solid var(--dta-outline);border-radius:8px;outline:none;background-color:var(--dta-control-bg);color:var(--dsw-alias-label-primary);color-scheme:light;font-size:12px;text-overflow:ellipsis;cursor:pointer;transition:border-color .14s ease,box-shadow .14s ease,background .14s ease}.dta-agentSelectInput:hover{border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 24%,var(--dta-outline))}.dta-agentSelectInput:focus-visible{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 20%,transparent)}body[data-ds-dark-theme] .dta-agentSelectInput{color-scheme:dark;background-color:var(--dta-control-bg);color:var(--dsw-alias-label-primary)}body:not([data-ds-dark-theme]) .dta-agentSelectInput option{background:#fff;color:#202124}body[data-ds-dark-theme] .dta-agentSelectInput option{background:#202226;color:#f1f2f4}',
+  '.dta-workspaceSelect{position:relative;min-width:0}.dta-workspaceSelectTrigger{box-sizing:border-box;width:100%;height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 11px;border:1px solid var(--dta-outline);border-radius:8px;background:var(--dta-control-bg);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px;cursor:pointer;text-align:left;transition:border-color .14s ease,box-shadow .14s ease,background .14s ease}.dta-workspaceSelectTrigger:hover,.dta-workspaceSelectTrigger[aria-expanded="true"]{border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 28%,var(--dta-outline))}.dta-workspaceSelectTrigger:focus-visible{outline:none;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 20%,transparent)}.dta-workspaceSelectValue{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dta-workspaceSelectChevron{width:7px;height:7px;flex:none;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg);color:var(--dsw-alias-label-secondary);transition:transform .16s ease}.dta-workspaceSelectTrigger[aria-expanded="true"] .dta-workspaceSelectChevron{transform:translateY(2px) rotate(225deg)}.dta-workspaceSelectMenu{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 6px);max-height:240px;overflow:auto;padding:5px;border:1px solid var(--dta-outline);border-radius:9px;background:var(--dta-surface);color:var(--dsw-alias-label-primary);box-shadow:0 18px 44px color-mix(in srgb,var(--dsw-alias-label-primary) 18%,transparent),inset 0 1px 0 color-mix(in srgb,var(--dsw-alias-bg-base) 52%,transparent)}.dta-workspaceSelectOption{box-sizing:border-box;width:100%;min-height:34px;display:grid;grid-template-columns:14px minmax(0,1fr);align-items:center;gap:7px;padding:6px 8px;border:0;border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12px;cursor:pointer;text-align:left}.dta-workspaceSelectOption:hover,.dta-workspaceSelectOption:focus-visible{outline:none;background:var(--dta-surface-hover)}.dta-workspaceSelectOptionMark{color:transparent;font-weight:700}.dta-workspaceSelectOption[aria-selected="true"] .dta-workspaceSelectOptionMark{color:var(--dsw-alias-brand-primary)}.dta-workspaceSelectOptionText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dta-agentAdd{padding:0 16px;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:transparent}',
   '.dta-quickBar{box-sizing:border-box;min-height:42px;flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);overflow-x:auto;scrollbar-width:thin}',
   '.dta-quickLabel{flex:none;color:var(--dsw-alias-label-tertiary);font-size:10.5px;letter-spacing:.04em}.dta-quickButton{flex:none;max-width:220px;height:28px;padding:0 10px;border:1px solid var(--dta-outline);border-radius:7px;background:var(--dta-surface-raised);color:var(--dsw-alias-label-primary);cursor:pointer;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .14s ease,border-color .14s ease,transform .1s ease}.dta-quickButton:hover{background:var(--dta-surface-hover);border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 26%,var(--dta-outline))}.dta-quickButton:active{transform:translateY(1px)}.dta-quickButton:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 24%,transparent)}',
@@ -127,6 +131,8 @@ const CSS = [
   '.dta-modalClose:focus-visible,.dta-modalCancel:focus-visible,.dta-modalConfirm:focus-visible,.dta-agentToggle:focus-visible,.dta-agentDelete:focus-visible,.dta-agentAdd:focus-visible,.dta-agentExpand:focus-visible,.dta-tab:focus-visible,.dta-tabClose:focus-visible,.dta-add:focus-visible,.dta-forward:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 24%,transparent)}',
   '.dta-modalCancel:active,.dta-modalConfirm:active,.dta-agentToggle:active,.dta-agentDelete:active,.dta-agentAdd:active{transform:translateY(1px)}',
   '.dta-modalConfirm:disabled{opacity:.45;cursor:not-allowed}',
+  '@container(max-width:620px){.dta-agentRow{grid-template-columns:minmax(100px,1fr) minmax(110px,1.2fr) auto auto auto;gap:8px;padding-inline:12px}.dta-agentDetails{grid-template-columns:1fr;padding:14px}.dta-shortcuts{grid-column:1;padding:13px}.dta-shortcutRow,.dta-shortcutForm{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.dta-shortcutRow>.dta-agentSelectInput,.dta-shortcutRow>.dta-workspaceSelect,.dta-shortcutForm>.dta-agentSelectInput,.dta-shortcutForm>.dta-workspaceSelect{grid-column:1/-1}.dta-shortcutRow>.dta-agentToggle,.dta-shortcutRow>.dta-agentDelete{grid-row:3;justify-self:start;min-width:76px}.dta-shortcutForm>.dta-agentAdd{grid-column:1/-1}.dta-agentForm{grid-template-columns:1fr 1fr}.dta-agentForm>.dta-agentAdd{grid-column:1/-1}}',
+  '@media(max-width:760px){.dta-settings{padding-inline:22px}}',
   '@media(max-height:720px){.dta-agentSelectMenu{max-height:180px}}',
 ].join('')
 
@@ -889,8 +895,50 @@ function AgentSelect(props) {
       })) : null)
 }
 
-function AgentSettings() {
+function WorkspaceSelect(props) {
+  const rootRef = React.useRef(null)
+  const openState = React.useState(false)
+  const open = openState[0]
+  const setOpen = openState[1]
+  const selected = props.workspaces.find(function (workspace) { return workspace.path === props.value }) || null
+  React.useEffect(function () {
+    if (!open || typeof document === 'undefined') return
+    const dismiss = function (event) {
+      if (rootRef.current !== null && !rootRef.current.contains(event.target)) setOpen(false)
+    }
+    const closeOnEscape = function (event) { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', closeOnEscape)
+    return function () {
+      document.removeEventListener('pointerdown', dismiss)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+  const options = [{ workspaceId: 'global', path: '', title: '全部工作区（全局）' }].concat(props.workspaces)
+  return React.createElement('div', { className: 'dta-workspaceSelect', ref: rootRef },
+    React.createElement('button', {
+      type: 'button', className: 'dta-workspaceSelectTrigger',
+      'aria-haspopup': 'listbox', 'aria-expanded': String(open),
+      onClick: function () { setOpen(!open) },
+    },
+      React.createElement('span', { className: 'dta-workspaceSelectValue' }, selected === null ? '全部工作区（全局）' : selected.title + ' — ' + selected.path),
+      React.createElement('span', { className: 'dta-workspaceSelectChevron', 'aria-hidden': 'true' })),
+    open ? React.createElement('div', { className: 'dta-workspaceSelectMenu', role: 'listbox', 'aria-label': props['aria-label'] || '选择适用工作区' },
+      options.map(function (workspace) {
+        const isSelected = workspace.path === props.value
+        return React.createElement('button', {
+          type: 'button', key: workspace.workspaceId, role: 'option', className: 'dta-workspaceSelectOption',
+          'aria-selected': String(isSelected),
+          onClick: function () { props.onChange(workspace.path); setOpen(false) },
+        },
+          React.createElement('span', { className: 'dta-workspaceSelectOptionMark', 'aria-hidden': 'true' }, '✓'),
+          React.createElement('span', { className: 'dta-workspaceSelectOptionText' }, workspace.path === '' ? workspace.title : workspace.title + ' — ' + workspace.path))
+      })) : null)
+}
+
+function AgentSettings(props) {
   const agents = useAgents()
+  const workspaces = props.useWorkspaces(function (state) { return state && Array.isArray(state.items) ? state.items : [] })
   const nameState = React.useState('')
   const name = nameState[0]
   const setName = nameState[1]
@@ -914,9 +962,9 @@ function AgentSettings() {
     const title = String(draft.title || '').trim()
     const content = String(draft.content || '').trim()
     if (title === '' || content === '') return
-    const shortcut = { id: 'shortcut-' + Date.now().toString(36), title: title, content: content, enabled: true }
+    const shortcut = { id: 'shortcut-' + Date.now().toString(36), title: title, content: content, enabled: true, workspacePath: String(draft.workspacePath || '') }
     saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: (item.shortcuts || []).concat(shortcut) } : item }))
-    setShortcutDrafts({ ...shortcutDrafts, [agent.id]: { title: '', content: '' } })
+    setShortcutDrafts({ ...shortcutDrafts, [agent.id]: { title: '', content: '', workspacePath: '' } })
   }
   const addAgent = function () {
     const nextName = name.trim()
@@ -933,7 +981,7 @@ function AgentSettings() {
     React.createElement('p', { className: 'dta-settingsDesc' }, '管理终端智能体。启用的智能体会显示在终端智能体页签的“+”菜单中。'),
     React.createElement('div', { className: 'dta-agentList' }, agents.map(function (agent) {
       const isExpanded = expanded[agent.id] === true
-      return React.createElement('div', { className: 'dta-agentCard', key: agent.id },
+      return React.createElement('div', { className: 'dta-agentCard', key: agent.id, 'data-expanded': String(isExpanded) },
         React.createElement('div', { className: 'dta-agentRow' },
           React.createElement('div', { className: 'dta-agentName' }, agent.name),
           React.createElement('div', { className: 'dta-agentSummary', title: agent.command + (agent.args ? ' ' + agent.args : '') }, agent.command + (agent.args ? ' ' + agent.args : '')),
@@ -981,17 +1029,25 @@ function AgentSettings() {
             React.createElement('div', { className: 'dta-shortcutHead' },
               React.createElement('span', { className: 'dta-shortcutTitle' }, '快捷指令'),
               React.createElement('span', { className: 'dta-shortcutHint' }, '点击后在该智能体终端中立即执行')),
+            React.createElement('div', { className: 'dta-shortcutColumns', 'aria-hidden': 'true' },
+              React.createElement('span', null, '标题'),
+              React.createElement('span', null, '指令内容'),
+              React.createElement('span', null, '适用工作区'),
+              React.createElement('span', null, '状态'),
+              React.createElement('span', null, '操作')),
             (agent.shortcuts || []).length === 0 ? React.createElement('p', { className: 'dta-shortcutEmpty' }, '还没有快捷指令') : null,
             React.createElement('div', { className: 'dta-shortcutList' }, (agent.shortcuts || []).map(function (shortcut) {
               return React.createElement('div', { className: 'dta-shortcutRow', key: shortcut.id },
                 React.createElement('input', { className: 'dta-agentInput', value: shortcut.title, 'aria-label': agent.name + ' 快捷指令标题', onChange: function (event) { const value = event.target.value; saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, title: value } : entry }) } : item })) } }),
                 React.createElement('input', { className: 'dta-agentInput dta-shortcutCommand', value: shortcut.content, 'aria-label': agent.name + ' 快捷指令内容', onChange: function (event) { const value = event.target.value; saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, content: value } : entry }) } : item })) } }),
+                React.createElement(WorkspaceSelect, { workspaces: workspaces, value: shortcut.workspacePath || '', 'aria-label': agent.name + ' 快捷指令工作区', onChange: function (value) { saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, workspacePath: value } : entry }) } : item })) } }),
                 React.createElement('button', { type: 'button', className: 'dta-agentToggle', 'data-enabled': String(shortcut.enabled !== false), onClick: function () { saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, enabled: entry.enabled === false } : entry }) } : item })) } }, shortcut.enabled === false ? '已禁用' : '启用'),
                 React.createElement('button', { type: 'button', className: 'dta-agentDelete', onClick: function () { saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.filter(function (entry) { return entry.id !== shortcut.id }) } : item })) } }, '删除'))
             })),
             React.createElement('div', { className: 'dta-shortcutForm' },
               React.createElement('input', { className: 'dta-agentInput', value: (shortcutDrafts[agent.id] || {}).title || '', placeholder: '标题，例如 完成测试', 'aria-label': agent.name + ' 新快捷指令标题', onChange: function (event) { updateShortcutDraft(agent.id, { title: event.target.value }) } }),
               React.createElement('input', { className: 'dta-agentInput dta-shortcutCommand', value: (shortcutDrafts[agent.id] || {}).content || '', placeholder: '指令内容，例如 /loop 完成测试', 'aria-label': agent.name + ' 新快捷指令内容', onChange: function (event) { updateShortcutDraft(agent.id, { content: event.target.value }) }, onKeyDown: function (event) { if (event.key === 'Enter') addShortcut(agent) } }),
+              React.createElement(WorkspaceSelect, { workspaces: workspaces, value: (shortcutDrafts[agent.id] || {}).workspacePath || '', 'aria-label': agent.name + ' 新快捷指令工作区', onChange: function (value) { updateShortcutDraft(agent.id, { workspacePath: value }) } }),
               React.createElement('button', { type: 'button', className: 'dta-agentAdd', onClick: function () { addShortcut(agent) } }, '+ 添加')),
           ),
         ) : null,
@@ -1365,7 +1421,9 @@ function TerminalConversationView(props, ctx) {
   const activeAgent = activeTerminal !== null && activeTerminal.agentId !== null
     ? agents.find(function (agent) { return agent.id === activeTerminal.agentId }) || null
     : null
-  const activeShortcuts = activeAgent === null ? [] : (activeAgent.shortcuts || []).filter(function (shortcut) { return shortcut.enabled !== false && shortcut.title.trim() !== '' && shortcut.content.trim() !== '' })
+  const activeShortcuts = activeAgent === null ? [] : (activeAgent.shortcuts || []).filter(function (shortcut) {
+    return shortcut.enabled !== false && shortcut.title.trim() !== '' && shortcut.content.trim() !== '' && shortcutMatchesWorkspace(shortcut, cwd)
+  })
   const executeShortcut = function (shortcut) {
     if (activeTerminal === null) return
     const command = createTerminalShortcutCommand(shortcut.content)

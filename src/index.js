@@ -25,6 +25,7 @@ const ShortcutSchema = z.object({
   title: z.string().required(),
   content: z.string().required(),
   enabled: z.boolean().default(true),
+  workspacePath: z.string().default(''),
 })
 const AgentSchema = z.object({
   id: z.string().required(),
