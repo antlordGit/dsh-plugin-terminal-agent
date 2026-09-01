@@ -11,6 +11,7 @@ test('Host 将可信用户输入写入独立 JSONL 文件', async function () {
     cwd,
     terminalKey: 'session-a:terminal-agent-1',
     terminalTitle: 'Codex-后端开发',
+    agentName: 'Codex',
     date: '2026-08-31',
     time: 1788166800000,
     text: '修复登录问题',
@@ -22,6 +23,7 @@ test('Host 将可信用户输入写入独立 JSONL 文件', async function () {
     date: '2026-08-31',
     text: '修复登录问题',
     terminalTitle: 'Codex-后端开发',
+    agentName: 'Codex',
   })
 })
 

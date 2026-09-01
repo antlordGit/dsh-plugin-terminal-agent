@@ -17,9 +17,15 @@ export const inject = ['webServer']
 
 const SETTINGS_NS = 'terminal-agent'
 const DEFAULT_AGENTS = [
-  { id: 'claude', name: 'Claude', command: 'claude', args: '', enabled: true, builtin: true },
-  { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true, builtin: true },
+  { id: 'claude', name: 'Claude', command: 'claude', args: '', enabled: true, builtin: true, shortcuts: [] },
+  { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true, builtin: true, shortcuts: [] },
 ]
+const ShortcutSchema = z.object({
+  id: z.string().required(),
+  title: z.string().required(),
+  content: z.string().required(),
+  enabled: z.boolean().default(true),
+})
 const AgentSchema = z.object({
   id: z.string().required(),
   name: z.string().required(),
@@ -27,6 +33,7 @@ const AgentSchema = z.object({
   args: z.string().default(''),
   enabled: z.boolean().default(true),
   builtin: z.boolean().default(false),
+  shortcuts: z.array(ShortcutSchema).default([]),
 })
 const SettingsSchema = z.object({
   agents: z.array(AgentSchema).default(DEFAULT_AGENTS),
@@ -101,6 +108,9 @@ export async function appendTerminalUserInput(body) {
   const terminalTitle = typeof body.terminalTitle === 'string'
     ? Array.from(body.terminalTitle.trim()).slice(0, 120).join('')
     : ''
+  const agentName = typeof body.agentName === 'string'
+    ? Array.from(body.agentName.trim()).slice(0, 80).join('')
+    : ''
   const inputDir = join(workspaceDirectory(body.cwd), '.dsh', 'terminal-agent-inputs')
   await mkdir(inputDir, { recursive: true, mode: 0o700 })
   const fileName = safeTerminalFileName(body.terminalKey) + '-' + body.date + '.user-input.log'
@@ -110,6 +120,7 @@ export async function appendTerminalUserInput(body) {
     date: body.date,
     text: body.text.trim(),
     terminalTitle: terminalTitle || '终端',
+    agentName: agentName || '终端智能体',
   }) + '\n'
   await appendFile(inputPath, record, { encoding: 'utf8', mode: 0o600 })
   return { inputPath }

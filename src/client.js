@@ -17,6 +17,7 @@ import {
   createTerminalUserInput,
   submitTerminalUserInput,
 } from './terminal-user-input.js'
+import { createTerminalShortcutCommand } from './terminal-shortcut.js'
 
 const CSS = [
   '.dta-workspace{--dta-surface:var(--dsw-alias-bg-overlay);--dta-surface-raised:var(--dsw-alias-bg-layer-1);--dta-surface-hover:var(--dsw-alias-interactive-bg-hover);--dta-control-bg:var(--dsw-alias-bg-base);--dta-outline:var(--dsw-alias-border-l2);--dta-shadow:color-mix(in srgb,var(--dsw-alias-label-primary) 14%,transparent);--dta-mask:color-mix(in srgb,var(--dsw-alias-label-primary) 38%,transparent);box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base)}',
@@ -64,6 +65,11 @@ const CSS = [
   '.dta-agentRow{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(200px,1.5fr) auto auto auto;align-items:center;gap:12px;min-height:62px}',
   '.dta-agentName{font-size:14px;font-weight:520}.dta-agentSummary{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-secondary);font:12px/1.5 var(--ds-font-family-code)}',
   '.dta-agentDetails{display:grid;grid-template-columns:1fr 1.35fr;gap:12px;padding:0 0 16px 142px}',
+  '.dta-shortcuts{grid-column:1/-1;margin-top:4px;padding-top:14px;border-top:1px solid var(--dsw-alias-border-l1)}',
+  '.dta-shortcutHead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}.dta-shortcutTitle{font-size:12px;font-weight:650}.dta-shortcutHint{color:var(--dsw-alias-label-tertiary);font-size:10.5px}',
+  '.dta-shortcutList{display:grid;gap:8px}.dta-shortcutRow{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(180px,1.5fr) auto auto;align-items:center;gap:8px}.dta-shortcutCommand{font-family:var(--ds-font-family-code)}',
+  '.dta-shortcutEmpty{margin:0 0 10px;color:var(--dsw-alias-label-tertiary);font-size:11.5px}',
+  '.dta-shortcutForm{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(180px,1.5fr) auto;gap:8px;margin-top:10px}',
   '.dta-agentField{min-width:0}.dta-agentFieldLabel{display:block;margin-bottom:4px;color:var(--dsw-alias-label-tertiary);font-size:10px}',
   '.dta-agentToggle,.dta-agentDelete,.dta-agentAdd{border:1px solid var(--dta-outline);border-radius:7px;background:var(--dta-surface-raised);color:var(--dsw-alias-label-secondary);cursor:pointer;font-size:12px;transition:background .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease}',
   '.dta-agentToggle{padding:5px 10px}.dta-agentToggle[data-enabled="true"]{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base)}',
@@ -75,6 +81,8 @@ const CSS = [
   '.dta-agentInput:hover{border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 24%,var(--dta-outline))}',
   '.dta-agentInput:focus-visible{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 20%,transparent)}',
   '.dta-agentAdd{padding:0 16px;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-bg-base);border-color:transparent}',
+  '.dta-quickBar{box-sizing:border-box;min-height:42px;flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);overflow-x:auto;scrollbar-width:thin}',
+  '.dta-quickLabel{flex:none;color:var(--dsw-alias-label-tertiary);font-size:10.5px;letter-spacing:.04em}.dta-quickButton{flex:none;max-width:220px;height:28px;padding:0 10px;border:1px solid var(--dta-outline);border-radius:7px;background:var(--dta-surface-raised);color:var(--dsw-alias-label-primary);cursor:pointer;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .14s ease,border-color .14s ease,transform .1s ease}.dta-quickButton:hover{background:var(--dta-surface-hover);border-color:color-mix(in srgb,var(--dsw-alias-label-primary) 26%,var(--dta-outline))}.dta-quickButton:active{transform:translateY(1px)}.dta-quickButton:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--dsw-alias-brand-primary) 24%,transparent)}',
   '.dta-workspace{position:relative}',
   '.dta-forward{position:absolute;top:4px;right:14px;z-index:24;box-sizing:border-box;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;box-shadow:none;transition:color .15s ease,background .15s ease}',
   '.dta-forward svg{display:block;flex:none;transform:translate(-.25px,.25px)}',
@@ -152,8 +160,8 @@ let agentSettingsSaveQueue = Promise.resolve()
 function loadAgents() {
   if (agentDefinitions !== null) return agentDefinitions
   agentDefinitions = [
-    { id: 'claude', name: 'Claude', command: 'claude', args: '', enabled: true, builtin: true },
-    { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true, builtin: true },
+    { id: 'claude', name: 'Claude', command: 'claude', args: '', enabled: true, builtin: true, shortcuts: [] },
+    { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true, builtin: true, shortcuts: [] },
   ]
   return agentDefinitions
 }
@@ -215,7 +223,9 @@ function initializeAgents() {
         localStorage.removeItem(AGENTS_KEY)
         localStorage.removeItem(LEGACY_AGENTS_KEY)
       }
-      agentDefinitions = next.map(function (agent) { return { ...agent, args: typeof agent.args === 'string' ? agent.args : '' } })
+      agentDefinitions = next.map(function (agent) {
+        return { ...agent, args: typeof agent.args === 'string' ? agent.args : '', shortcuts: Array.isArray(agent.shortcuts) ? agent.shortcuts : [] }
+      })
       for (const listener of agentListeners) listener()
     } catch (error) {
       console.error('[terminal-agent] 读取智能体配置失败，暂时使用本地默认值', error)
@@ -355,7 +365,7 @@ function localDateKey() {
   return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
 }
 
-function persistTerminalUserInput(cwd, terminalKey, terminalTitle, text) {
+function persistTerminalUserInput(cwd, terminalKey, terminalTitle, agentName, text) {
   if (!cwd || typeof fetch !== 'function' || typeof text !== 'string' || text === '') return
   fetch('/api/plugins/terminal-agent/terminal-input', {
     method: 'POST',
@@ -364,6 +374,7 @@ function persistTerminalUserInput(cwd, terminalKey, terminalTitle, text) {
       cwd: cwd,
       terminalKey: terminalKey,
       terminalTitle: terminalTitle,
+      agentName: agentName,
       date: localDateKey(),
       time: Date.now(),
       text: text,
@@ -892,18 +903,33 @@ function AgentSettings() {
   const expandedState = React.useState({})
   const expanded = expandedState[0]
   const setExpanded = expandedState[1]
+  const shortcutDraftState = React.useState({})
+  const shortcutDrafts = shortcutDraftState[0]
+  const setShortcutDrafts = shortcutDraftState[1]
+  const updateShortcutDraft = function (agentId, patch) {
+    setShortcutDrafts({ ...shortcutDrafts, [agentId]: { title: '', content: '', ...(shortcutDrafts[agentId] || {}), ...patch } })
+  }
+  const addShortcut = function (agent) {
+    const draft = shortcutDrafts[agent.id] || {}
+    const title = String(draft.title || '').trim()
+    const content = String(draft.content || '').trim()
+    if (title === '' || content === '') return
+    const shortcut = { id: 'shortcut-' + Date.now().toString(36), title: title, content: content, enabled: true }
+    saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: (item.shortcuts || []).concat(shortcut) } : item }))
+    setShortcutDrafts({ ...shortcutDrafts, [agent.id]: { title: '', content: '' } })
+  }
   const addAgent = function () {
     const nextName = name.trim()
     const nextCommand = command.trim()
     if (nextName === '' || nextCommand === '') return
     const id = 'custom-' + Date.now().toString(36)
-    saveAgents(agents.concat({ id: id, name: nextName, command: nextCommand, args: args.trim(), enabled: true, builtin: false }))
+    saveAgents(agents.concat({ id: id, name: nextName, command: nextCommand, args: args.trim(), enabled: true, builtin: false, shortcuts: [] }))
     setName('')
     setCommand('')
     setArgs('')
   }
   return React.createElement('section', { className: 'dta-settings' },
-    React.createElement('h2', { className: 'dta-settingsTitle' }, '智能体'),
+    React.createElement('h2', { className: 'dta-settingsTitle' }, '终端智能体'),
     React.createElement('p', { className: 'dta-settingsDesc' }, '管理终端智能体。启用的智能体会显示在终端智能体页签的“+”菜单中。'),
     React.createElement('div', { className: 'dta-agentList' }, agents.map(function (agent) {
       const isExpanded = expanded[agent.id] === true
@@ -950,6 +976,23 @@ function AgentSettings() {
               'aria-label': agent.name + ' 参数',
               onChange: function (event) { const value = event.target.value; saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, args: value } : item })) },
             }),
+          ),
+          React.createElement('div', { className: 'dta-shortcuts' },
+            React.createElement('div', { className: 'dta-shortcutHead' },
+              React.createElement('span', { className: 'dta-shortcutTitle' }, '快捷指令'),
+              React.createElement('span', { className: 'dta-shortcutHint' }, '点击后在该智能体终端中立即执行')),
+            (agent.shortcuts || []).length === 0 ? React.createElement('p', { className: 'dta-shortcutEmpty' }, '还没有快捷指令') : null,
+            React.createElement('div', { className: 'dta-shortcutList' }, (agent.shortcuts || []).map(function (shortcut) {
+              return React.createElement('div', { className: 'dta-shortcutRow', key: shortcut.id },
+                React.createElement('input', { className: 'dta-agentInput', value: shortcut.title, 'aria-label': agent.name + ' 快捷指令标题', onChange: function (event) { const value = event.target.value; saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, title: value } : entry }) } : item })) } }),
+                React.createElement('input', { className: 'dta-agentInput dta-shortcutCommand', value: shortcut.content, 'aria-label': agent.name + ' 快捷指令内容', onChange: function (event) { const value = event.target.value; saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, content: value } : entry }) } : item })) } }),
+                React.createElement('button', { type: 'button', className: 'dta-agentToggle', 'data-enabled': String(shortcut.enabled !== false), onClick: function () { saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.map(function (entry) { return entry.id === shortcut.id ? { ...entry, enabled: entry.enabled === false } : entry }) } : item })) } }, shortcut.enabled === false ? '已禁用' : '启用'),
+                React.createElement('button', { type: 'button', className: 'dta-agentDelete', onClick: function () { saveAgents(agents.map(function (item) { return item.id === agent.id ? { ...item, shortcuts: item.shortcuts.filter(function (entry) { return entry.id !== shortcut.id }) } : item })) } }, '删除'))
+            })),
+            React.createElement('div', { className: 'dta-shortcutForm' },
+              React.createElement('input', { className: 'dta-agentInput', value: (shortcutDrafts[agent.id] || {}).title || '', placeholder: '标题，例如 完成测试', 'aria-label': agent.name + ' 新快捷指令标题', onChange: function (event) { updateShortcutDraft(agent.id, { title: event.target.value }) } }),
+              React.createElement('input', { className: 'dta-agentInput dta-shortcutCommand', value: (shortcutDrafts[agent.id] || {}).content || '', placeholder: '指令内容，例如 /loop 完成测试', 'aria-label': agent.name + ' 新快捷指令内容', onChange: function (event) { updateShortcutDraft(agent.id, { content: event.target.value }) }, onKeyDown: function (event) { if (event.key === 'Enter') addShortcut(agent) } }),
+              React.createElement('button', { type: 'button', className: 'dta-agentAdd', onClick: function () { addShortcut(agent) } }, '+ 添加')),
           ),
         ) : null,
       )
@@ -1299,7 +1342,7 @@ function TerminalConversationView(props, ctx) {
     const key = props.sessionId + ':' + item.id
     const result = submitTerminalUserInput(terminalUserInputFor(key))
     terminalUserInputs.set(key, result.state)
-    if (result.text !== null) persistTerminalUserInput(cwd, key, item.title, result.text)
+    if (result.text !== null) persistTerminalUserInput(cwd, key, item.title, item.agentName || '终端智能体', result.text)
   }
   const beginRename = function (item, event) {
     event.preventDefault()
@@ -1318,6 +1361,22 @@ function TerminalConversationView(props, ctx) {
   const selectedForwardAgent = enabledAgents.find(function (agent) { return agent.id === forwardAgentId })
     || enabledAgents[0]
     || null
+  const activeTerminal = workspace.terminals.find(function (item) { return item.id === workspace.activeId }) || null
+  const activeAgent = activeTerminal !== null && activeTerminal.agentId !== null
+    ? agents.find(function (agent) { return agent.id === activeTerminal.agentId }) || null
+    : null
+  const activeShortcuts = activeAgent === null ? [] : (activeAgent.shortcuts || []).filter(function (shortcut) { return shortcut.enabled !== false && shortcut.title.trim() !== '' && shortcut.content.trim() !== '' })
+  const executeShortcut = function (shortcut) {
+    if (activeTerminal === null) return
+    const command = createTerminalShortcutCommand(shortcut.content)
+    if (command === null) return
+    const key = props.sessionId + ':' + activeTerminal.id
+    const sender = terminalSenders.get(key)
+    if (typeof sender !== 'function') { showPasteStatus('当前终端尚未连接，请稍后重试', true); return }
+    sender(command.text)
+    window.setTimeout(function () { sender(command.enter) }, 40)
+    persistTerminalUserInput(cwd, key, activeTerminal.title, activeTerminal.agentName || '终端智能体', command.text)
+  }
   // 读取当前会话快照，分别落盘只读 transcript 与 continuation prompt，再启动新智能体。
   const confirmForward = async function () {
     if (selectedForwardAgent === null || workspace.terminals.length >= TERMINAL_LIMIT || forwarding) return
@@ -1498,6 +1557,9 @@ function TerminalConversationView(props, ctx) {
         React.createElement(TerminalBridge, { scope: scope, tabId: item.id, command: item.command }),
       )
     })),
+    activeShortcuts.length > 0 ? React.createElement('div', { className: 'dta-quickBar', 'aria-label': activeAgent.name + ' 快捷指令' },
+      React.createElement('span', { className: 'dta-quickLabel' }, '快捷指令'),
+      activeShortcuts.map(function (shortcut) { return React.createElement('button', { type: 'button', key: shortcut.id, className: 'dta-quickButton', title: shortcut.content, onClick: function () { executeShortcut(shortcut) } }, shortcut.title) })) : null,
     pasteStatus !== null ? React.createElement('div', {
       className: 'dta-pasteStatus', role: 'status', 'aria-live': 'polite', 'data-error': String(pasteStatus.error),
     }, pasteStatus.text) : null,
@@ -1604,7 +1666,7 @@ function TerminalConversationView(props, ctx) {
           autoFocus: true,
           onChange: setForwardAgentId,
           label: function (agent) { return agent.name + '（' + agent.command + (agent.args.trim() === '' ? '' : ' ' + agent.args.trim()) + '）' },
-        }) : React.createElement('p', { className: 'dta-modalWarn' }, '暂无已启用的智能体，请先在“设置 → 智能体”中启用。'),
+        }) : React.createElement('p', { className: 'dta-modalWarn' }, '暂无已启用的智能体，请先在“设置 → 终端智能体”中启用。'),
         forwardError !== '' ? React.createElement('p', { className: 'dta-modalWarn', role: 'alert' }, forwardError) : null,
         React.createElement('div', { className: 'dta-modalActions' },
           React.createElement('button', {
@@ -1658,7 +1720,7 @@ export function apply(ctx) {
       name: 'settings.section',
       id: 'terminal-agent',
       order: 45,
-      label: '智能体',
+      label: '终端智能体',
     }, AgentSettings)
   })
   ctx.slots.inject('conversation.view', function () {
